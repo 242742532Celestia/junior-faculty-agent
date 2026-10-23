@@ -1060,16 +1060,28 @@ def check_github_open_source():
           "缺：%s" % ", ".join(missing))
 
     ci = read(".github/workflows/ci.yml")
-    miss_run = [c for c in CI_MUST_RUN if c not in ci]
+    # 🔴 **只看代码行，不看注释行**。
+    #    上一版用 `"scripts/verify_repo.py" in ci` 判，结果被 ci.yml 里的
+    #    一句注释喂饱了 —— 而真正的 `run:` 命令还在。
+    #    ⇒ **文本匹配会把注释当成执行**，而 CI 里真正跑什么只有 run: 行说了算。
+    ci_code = [ln.strip() for ln in ci.splitlines()
+               if ln.strip() and not ln.strip().startswith("#")]
+    ci_runs = [ln for ln in ci_code if ln.startswith("run:")]
+
+    def _ci_runs(cmd):
+        return any(cmd in ln for ln in ci_runs)
+
+    miss_run = [c for c in CI_MUST_RUN if not _ci_runs(c)]
     check("CI 真的跑本仓库的判据（不是空 workflow）", not miss_run,
-          "ci.yml 里没跑：%s" % ", ".join(miss_run))
+          "ci.yml 的 run: 行里没跑：%s" % ", ".join(miss_run))
 
     # Windows 与 Python 3.9 都要在矩阵里：
     #   · Windows —— 中文控制台 GBK 那类问题**只在 Windows 暴露**，
     #     只跑 ubuntu 会把"自己母语环境下不绿"的守卫漏过去；
     #   · 3.9 —— 本项目的兼容下限，少了它就没人证明下限还成立。
-    win = "windows-latest" in ci
-    py39 = bool(re.search(r'"?3\.9"?', ci))
+    #   同样**只看代码行**：注释里提一句 3.9 不等于矩阵里有 3.9。
+    win = any("windows-latest" in ln for ln in ci_code)
+    py39 = any('"3.9"' in ln for ln in ci_code)
     check("CI 覆盖 Windows 与 Python 3.9（编码坑 / 兼容下限）", win and py39,
           "windows-latest=%s / 3.9=%s" % (win, py39))
 
@@ -1107,6 +1119,21 @@ def check_github_open_source():
     has = bool(ver) and ("## [%s]" % ver) in ch
     check("CHANGELOG 覆盖当前版本（%s）" % (ver or "?"), has,
           "CHANGELOG 里没有 ## [%s] 的条目" % (ver or "?"))
+
+    # 🔴 占位符：owner 一填上，文档里就不该还留 OWNER/REPO。
+    #    owner 为空是**正常的**（还没建仓库）⇒ 此时发布说明自动用占位；
+    #    但一旦填了 owner 还没清占位 ⇒ 公开仓库里就挂着指向不存在仓库的链接，
+    #    而**没有任何既有检查会为此变红**。
+    #    （与 check_upstream 同一处理法：环境相关的检查也要计入总数，
+    #      否则守卫的检查数会随环境变化，README 里的「N/N」就不是一句话了。）
+    if owner:
+        stale = [rel for rel in (".github/ISSUE_TEMPLATE/config.yml", "CHANGELOG.md")
+                 if "OWNER/REPO" in read(rel)]
+        check("owner 已填 ⇒ 文档里不再留 OWNER/REPO 占位", not stale,
+              "仍含占位：%s" % ", ".join(stale))
+    else:
+        check("owner 已填 ⇒ 文档里不再留 OWNER/REPO 占位", True,
+              "owner 尚未填写（发布前填上即可）")
 
 
 # ─────────────────────────────────────────────────────────────

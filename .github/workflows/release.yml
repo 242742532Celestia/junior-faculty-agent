@@ -40,22 +40,33 @@ jobs:
       # 🔴 发布前最后一道：把产物**真的解开跑一遍**。
       #    文件清单对、sha256 对、包能解开 —— 这三件事全过，仍可能一跑就炸
       #    （分档包曾因变量未绑定而崩在克隆方第一次运行时）。
+      #    用 glob 而不是写死版本号 —— 版本一升，写死的路径就断了。
+      #    源码包走 github_release.py --verify：它带顶层目录，
+      #    MANIFEST 不在根部，分档包的校验器读不到（那是**两种包结构**，
+      #    不是同一个包有两种状态）。
       - name: 产物复核
         run: |
-          python scripts/package_release.py --verify dist/junior-faculty-agent-1.0.0.zip
-          python scripts/package_release.py --verify dist/junior-faculty-agent-1.0.0-teaching.zip
-          python scripts/package_release.py --verify dist/junior-faculty-agent-1.0.0-research.zip
+          for z in dist/*.zip; do
+            case "$z" in
+              *-source.zip) continue ;;
+            esac
+            echo "== $z =="
+            python scripts/package_release.py --verify "$z"
+          done
           python scripts/github_release.py --verify
 
       - name: 挂到 GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.ref_name }}
-          body_path: dist/RELEASE_NOTES.md
-          files: |
-            dist/junior-faculty-agent-1.0.0.zip
-            dist/junior-faculty-agent-1.0.0-teaching.zip
-            dist/junior-faculty-agent-1.0.0-research.zip
-            dist/junior-faculty-agent-1.0.0-source.zip
-          fail_on_unmatched_files: true
-          generate_release_notes: false
+        # 🔴 用 runner 自带的 `gh` CLI，**不用第三方 action** ——
+        #    发布路径上少一个供应链依赖（`gh` 随 GitHub runner 提供）。
+        #    重跑本 workflow 时 Release 已存在 ⇒ 改成覆盖上传。
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.zip dist/RELEASE_NOTES.md --clobber
+            gh release edit "$TAG" --notes-file dist/RELEASE_NOTES.md --title "$TAG"
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file dist/RELEASE_NOTES.md \
+              dist/*.zip dist/RELEASE_NOTES.md
+          fi

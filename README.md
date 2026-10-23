@@ -332,7 +332,7 @@ python scripts\skill_scan.py --selftest
 # selftest: 20/20 checks passed
 
 python scripts\verify_repo.py
-# verify_repo: 104/104 checks passed
+# verify_repo: 105/105 checks passed
 
 python scripts\verify_rewrite.py
 # verify_rewrite: 666/666 checks passed
@@ -340,7 +340,7 @@ python scripts\verify_rewrite.py
 #     带上游原文（--upstream / JFA_UPSTREAM）会多跑 50 项 clean-room 相似度核对 ⇒ 716）
 
 python scripts\test_verify_repo.py
-# 49/49 项变异均被守卫在预期检查项上抓到
+# 51/51 项变异均被守卫在预期检查项上抓到
 # （另有 3 项 verify_rewrite 变异：交叉引用悬空 / 标准章节改名 / license 非 MIT）
 # （另有 3 项出包器变异：矩阵归属漂移 / 档位能力域被删 / 包内缺许可副本 → 必须中止出包）
 
@@ -447,6 +447,8 @@ README 若写自己手边有上游时的数字，读者实跑对不上却不知�
 # ① 在 GitHub 上建一个空仓库（不要勾选 README/LICENSE —— 本仓库自带）
 #    然后填一次配置：编辑 references/github-release.json 里的 "owner"
 #    （仓库名 / 描述 / topics 的唯一出处，填完重跑一次出包脚本即可）
+#    ⚠️ 填完 owner 后，守卫会要求把文档里残留的 OWNER/REPO 占位换成真名
+#       （它会指名道姓地告诉你是哪两个文件：Issue 模板与 CHANGELOG）
 
 # ② 打标签即发布：release.yml 会自动出包、复核、挂到 Release
 git tag v1.0.0

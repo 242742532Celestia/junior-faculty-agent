@@ -168,12 +168,22 @@
 >   ④ **社区件进分发包**：CHANGELOG / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT /
 >      `.gitattributes` / `.editorconfig` 与 `.github/` 一并进三档包 ——
 >      一个分发物应该自带"这是什么、怎么改、怎么报问题、许可是什么"。
->   ⑤ **新增 5 条守卫**（开源件齐全 / CI 真的跑判据 / CI 覆盖 Windows 与 3.9 /
->      发布配置完整 / CHANGELOG 覆盖当前版本）+ **对应的 4 条变异**。
+>   ⑤ **新增 6 条守卫**（开源件齐全 / CI 真的跑判据 / CI 覆盖 Windows 与 3.9 /
+>      发布配置完整 / CHANGELOG 覆盖当前版本 / **owner 填了就不该还留
+>      `OWNER/REPO` 占位**）+ **对应的 6 条变异**。
 >      🔴 「开源性」是最容易悄悄烂掉的东西：CI 文件还在但里面跑的命令早就改了，
->         社区文件还在但内容指向已消失的路径 —— 这些**不会让任何既有检查变红**。
+>         社区文件还在但内容指向已消失的路径，仓库建好了但链接还指着
+>         `OWNER/REPO` —— 这些**不会让任何既有检查变红**。
 >      ⇒ 所以必须有守卫盯着它们，也必须有变异证明这些守卫会红。
->   守卫检查数 **99 → 104**；变异测试 **51 → 55**（49 + 3 + 3）；
+>   ⑥ 🔴 写这组守卫时踩了**本轮第 4 次同一个病**：CI 守卫原本用
+>      `"scripts/verify_repo.py" in ci` 判"CI 有没有跑守卫"，
+>      而 ci.yml 的**注释**里也写着这个路径 ⇒ 注释把守卫喂饱了，
+>      注入的变异改的也是注释、真正的 `run:` 命令纹丝不动 ⇒ **变异漏检**。
+>      修法两处同时动：守卫**只看代码行**且要求落在 `run:` 行上；
+>      变异的锚点也落在 `run:` 行上。
+>      ⇒ **文本匹配会把注释当成执行** —— 这与「局部替换冒充全局替换」
+>         是同一个病的两个马甲。
+>   守卫检查数 **99 → 105**；变异测试 **51 → 57**（51 + 3 + 3）；
 >   Demo 自检仍 **57**；分发包 **501 → 515** 个文件。
 > - 本报告保留原样是为了记录**当时的判断与依据**（不做事后修饰）。
 >   当前仓库的实际状态以 `README.md` 与 `THIRD-PARTY-NOTICES.md` 为准，
@@ -335,14 +345,14 @@ python scripts\skill_scan.py --selftest
 selftest: 20/20 checks passed
 
 python scripts\verify_repo.py
-verify_repo: 104/104 checks passed
+verify_repo: 105/105 checks passed
 
 python scripts\verify_rewrite.py
 verify_rewrite: 666/666 checks passed
 （无上游原文时的口径；带上游原文会多 50 项相似度核对 ⇒ 716）
 
 python scripts\test_verify_repo.py
-全部 55 项变异均被守卫在预期检查项上抓到。
+全部 57 项变异均被守卫在预期检查项上抓到。
 
 python scripts\github_release.py --build
 GitHub 源码包校验通过（515 个文件 + MANIFEST.json；克隆即用已通过）。

@@ -631,13 +631,39 @@ def mutate_ci_stops_running_gates(dst):
 
     🔴 这条针对的失败模式很阴：CI 还在、badge 还在绿的，
        但它跑的不再是本仓库的判据 ⇒ 任何东西变坏都不会让 CI 变红。
+
+    🔴 锚点必须落在 **`run:` 行**上，不能落在「文件里出现过这个路径」。
+       上一版锚的是 "python scripts/verify_repo.py"，而 ci.yml 的**注释**里
+       也有一处 ⇒ 替换改的是注释，真正的命令纹丝不动 ⇒ 守卫当然绿着。
+       ⇒ 这与「局部替换冒充全局替换」是同一个病的另一个马甲：
+          **文本匹配会把注释当成执行。**
     """
     rel = os.path.join(".github", "workflows", "ci.yml")
     t = _rd(dst, rel)
-    old = "python scripts/verify_repo.py"
+    old = "run: python scripts/verify_repo.py"
     if old not in t:
-        raise RuntimeError("变异无效：ci.yml 里找不到守卫的调用")
-    _wr(dst, rel, t.replace(old, "echo 'skipped'", 1))
+        raise RuntimeError("变异无效：ci.yml 里找不到 run: 行上的守卫调用")
+    _wr(dst, rel, t.replace(old, "run: echo 'skipped'", 1))
+
+
+def mutate_ci_drops_windows_matrix(dst):
+    """CI 矩阵里删掉 Windows —— 中文控制台那类问题就永远没人跑了。
+
+    🔴 只改**代码行**（矩阵里的 os: 行），不动注释 ——
+       注释里提一句 Windows 不等于矩阵里有 Windows。
+    """
+    rel = os.path.join(".github", "workflows", "ci.yml")
+    lines = _rd(dst, rel).splitlines(True)
+    hit = 0
+    for i, ln in enumerate(lines):
+        s = ln.strip()
+        if s.startswith("#") or "windows-latest" not in s:
+            continue
+        lines[i] = s.replace(", windows-latest", "").replace("windows-latest, ", "")
+        hit += 1
+    if not hit:
+        raise RuntimeError("变异无效：ci.yml 里找不到含 windows-latest 的代码行")
+    _wr(dst, rel, "".join(lines))
 
 
 def mutate_github_config_broken(dst):
@@ -659,6 +685,24 @@ def mutate_changelog_drops_version(dst):
     if old not in t:
         raise RuntimeError("变异无效：CHANGELOG.md 里找不到 1.0.0 的条目")
     _wr(dst, "CHANGELOG.md", t.replace(old, "## [0.9.0]", 1))
+
+
+def mutate_owner_set_but_placeholder_left(dst):
+    """owner 填了，却没清 OWNER/REPO 占位 —— 公开仓库里挂着失效链接。
+
+    🔴 这条针对的失败模式很阴：仓库已经配好 owner，看起来"发布就绪"，
+       但 ISSUE 模板与 CHANGELOG 里的链接还指向 `OWNER/REPO` ——
+       **没有任何既有检查会为此变红**，链接要等用户真去点才发现是死的。
+    """
+    rel = os.path.join("references", "github-release.json")
+    t = _rd(dst, rel)
+    try:
+        cfg = json.loads(t)
+    except Exception as e:
+        raise RuntimeError("变异无效：github-release.json 解析不了：%s" % e)
+    cfg["owner"] = "someone"
+    _wr(dst, rel, json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
+    # 占位符保持原样（这正是要被抓的失败模式）
 
 
 MUTATIONS = [
@@ -719,8 +763,12 @@ MUTATIONS = [
     ("模型路由删掉 lint 用途", mutate_llm_drop_lint_purpose, "模型按用途路由"),
     ("GitHub 骨架件被删", mutate_github_drop_ci, "GitHub 开源件齐全"),
     ("CI 不再跑本仓库的判据", mutate_ci_stops_running_gates, "CI 真的跑本仓库的判据"),
+    ("CI 矩阵里删掉 Windows", mutate_ci_drops_windows_matrix,
+     "CI 覆盖 Windows 与 Python 3.9"),
     ("发布配置被写坏", mutate_github_config_broken, "GitHub 发布配置完整"),
     ("CHANGELOG 少了当前版本", mutate_changelog_drops_version, "CHANGELOG 覆盖当前版本"),
+    ("owner 填了却没清占位", mutate_owner_set_but_placeholder_left,
+     "不再留 OWNER/REPO 占位"),
 ]
 
 # 🔴 出包器自己也必须"证明会红"：分档包一旦打出来就收不回去了。
