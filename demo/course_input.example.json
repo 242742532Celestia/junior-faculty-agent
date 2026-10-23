@@ -1,0 +1,37 @@
+{
+  "course": "数字图像处理",
+  "course_code": "",
+  "college": "",
+  "semester": "",
+  "teacher": "",
+  "major": "计算机科学与技术",
+  "nature": "必修",
+  "prerequisites": "程序设计基础、线性代数",
+  "session_no": 4,
+  "chapter": "第 4 章 图像增强",
+  "topic": "图像增强",
+  "hours": 2,
+  "minutes": 90,
+  "course_objectives": [
+    {
+      "id": "CO-3",
+      "text": "能解释直方图均衡化与空间滤波改变灰度结构的机制"
+    },
+    {
+      "id": "CO-4",
+      "text": "能按应用目标选择合适的图像增强策略并说明参数依据"
+    }
+  ],
+  "key_points": [
+    "直方图均衡化的机制",
+    "空间滤波的邻域概念"
+  ],
+  "difficulties": [
+    "均衡化在低对比度图像上可能放大噪声"
+  ],
+  "prior_knowledge": [
+    "点运算与灰度变换",
+    "直方图的统计含义"
+  ],
+  "ideology": "工程报国：图像增强在医疗影像、工业质检与遥感判读中的实际作用"
+}

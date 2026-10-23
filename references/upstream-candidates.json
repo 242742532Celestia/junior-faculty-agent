@@ -1,0 +1,64 @@
+{
+  "_comment": "能力矩阵中标记为 ○ 的『上游存在但未安装』技能清单。verify_repo.py 校验矩阵的 ○ 标记与此文件一致；上游暂存目录可用时（JFA_UPSTREAM 环境变量）还会逐条回源核实。⚠️ 本清单只登记**可商用**上游的候选：CC BY-NC（NonCommercial）上游的技能一律不登记，避免非商业内容进入分发版。",
+  "_schema": "name -> {upstream, skill_id, note}",
+  "digital-worked-example-sequence": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-learning-science/digital-worked-example-sequence",
+    "note": "数字worked例题序列；B3 格的补充候选"
+  },
+  "critical-thinking-task-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "literacy-critical-thinking/critical-thinking-task-designer",
+    "note": "C4 格的补充候选"
+  },
+  "metacognitive-prompt-library": {
+    "upstream": "education-agent-skills",
+    "skill_id": "self-regulated-learning/metacognitive-prompt-library",
+    "note": "D1 格的补充候选"
+  },
+  "stuck-and-error-diagnosis-coach": {
+    "upstream": "education-agent-skills",
+    "skill_id": "student-learning/stuck-and-error-diagnosis-coach",
+    "note": "D2 格的补充候选"
+  },
+  "self-explanation-prompt-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-learning-science/self-explanation-prompt-designer",
+    "note": "D5 格的补充候选"
+  },
+  "ai-hallucination-fact-check-protocol": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/ai-hallucination-fact-check-protocol",
+    "note": "D6 格的 AI 事实核查补充候选"
+  },
+  "ai-output-critical-audit-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/ai-output-critical-audit-designer",
+    "note": "D6 格的 AI 输出审查补充候选"
+  },
+  "ai-expertise-interrogation-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/ai-expertise-interrogation-designer",
+    "note": "F5 格的 7 个 ai-literacy 候选之一"
+  },
+  "ai-learning-boundary-mapper": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/ai-learning-boundary-mapper",
+    "note": "F5 格的 7 个 ai-literacy 候选之一"
+  },
+  "ai-socratic-dialogue-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/ai-socratic-dialogue-designer",
+    "note": "F5 格的 7 个 ai-literacy 候选之一"
+  },
+  "disciplinary-ai-literacy-sequence-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/disciplinary-ai-literacy-sequence-designer",
+    "note": "F5 格的 7 个 ai-literacy 候选之一"
+  },
+  "prompt-literacy-sequence-designer": {
+    "upstream": "education-agent-skills",
+    "skill_id": "ai-literacy/prompt-literacy-sequence-designer",
+    "note": "F5 格的 7 个 ai-literacy 候选之一"
+  }
+}

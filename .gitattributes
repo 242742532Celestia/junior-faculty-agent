@@ -1,0 +1,32 @@
+# 🔴 本仓库的文本文件**一律 LF**、**一律 UTF-8 无 BOM**。
+#    这不是偏好，是机器判据：scripts/verify_repo.py 会核对「全部文本文件 UTF-8 无 BOM」，
+#    而中文 Windows 的编辑器默认塞 BOM、默认写 CRLF —— 不钉住就会漂。
+#
+#    eol=lf 的作用是**优先于** core.autocrlf：
+#    无论贡献者本机 autocrlf 是什么，签出到工作区都是 LF。
+
+* text=auto eol=lf
+
+# ── 明确按文本处理（避免 git 猜错）──
+*.md      text eol=lf
+*.txt     text eol=lf
+*.py      text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.sh      text eol=lf
+*.ps1     text eol=lf
+*.cfg     text eol=lf
+*.toml    text eol=lf
+
+# ── 二进制：绝不进行行尾转换，也不做 diff ──
+*.pptx    binary
+*.docx    binary
+*.xlsx    binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.pdf     binary
+*.zip     binary
+*.gz      binary

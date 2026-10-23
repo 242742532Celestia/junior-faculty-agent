@@ -1,0 +1,39 @@
+# 运行时与缓存（不应进版本库）
+.cache/
+__pycache__/
+*.pyc
+.agent-instance-id
+
+# ⚠️ 非商业内容（CC BY-NC 4.0）—— 本机自用副本，绝不能进版本库。
+# 一旦提交，整个仓库就失去商业可用性。
+# package_release.py 出包时也会显式排除并校验。
+skills-archive/
+
+# 出包产物
+dist/
+
+# 演示程序的运行产物（每次跑都会重生成，不进版本库、不进分发包）
+demo/out/
+
+# 巡检产出（临时候选清单，每次巡检重新生成，不进版本库）
+reports/*-candidates.json
+
+# 注意：reports/smoke-test-*.md 是端到端验证的**交付证据**，随仓库分发，不忽略。
+
+# 本地环境
+.env
+.env.*
+!.env.example
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Office 临时文件
+~$*
+~$*.docx
+~$*.xlsx
+~$*.pptx

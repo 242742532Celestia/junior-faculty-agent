@@ -1,0 +1,26 @@
+{
+  "_rules": [
+    "本文件是「分档出包」的唯一数据源：每个包内含哪些技能，由「能力矩阵的能力域」机械推导，不手工枚举。",
+    "domains 对应能力矩阵（references/faculty-capability-matrix.md）的能力域前缀 A–F。",
+    "full_only_skills 是**不属于任何能力格**的仓库机制类技能 —— 它们只进 full 包。",
+    "恒等式：teaching ∪ research == full − full_only_skills，由 scripts/verify_repo.py 机械校验；本文件改错会立刻变红。"
+  ],
+  "profiles": {
+    "full": {
+      "label": "完整包",
+      "domains": ["A", "B", "C", "D", "E", "F"],
+      "description": "全部已装技能（含仓库机制类）。默认档，不带后缀文件名。"
+    },
+    "teaching": {
+      "label": "教学包",
+      "domains": ["A", "B", "C", "D", "F"],
+      "description": "教学准备与设计 / 教学实施 / 考核与评价 / 学生支持与素养 / 教研与专业发展 五个域。"
+    },
+    "research": {
+      "label": "科研包",
+      "domains": ["E"],
+      "description": "科研全流程一个域（选题→实验→写作→投稿→评议→图表→汇报→申报→教学研究论文）。"
+    }
+  },
+  "full_only_skills": ["skill-scan"]
+}

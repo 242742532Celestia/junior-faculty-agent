@@ -1,0 +1,21 @@
+# 与 .gitattributes 配套（.gitattributes 管 git 行为，.editorconfig 管编辑器行为）。
+# 两边必须一致，否则「提交进 git 是 LF、编辑器存出来是 CRLF」会来回拉锯。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{md,yml,yaml,json,toml,cfg}]
+indent_size = 2
+
+[*.{bat,cmd,ps1}]
+indent_size = 4
+
+[Makefile]
+indent_style = tab

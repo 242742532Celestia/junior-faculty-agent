@@ -1,0 +1,56 @@
+{
+  "_comment": "外部技能登记表 —— 被本仓库的技能或能力矩阵引用、但【不随本仓库分发】的技能。矩阵里用 ◐ 标记，技能正文里用 → 交叉引用。守卫（verify_repo.py / verify_rewrite.py）以本表为判据来源，因此这张表就是『外部技能』的唯一事实来源，不要在别处另写一份。",
+  "_rules": [
+    "本表登记的技能【不在】skills/ 下 —— 进了 skills/ 就该改标 ●，守卫会报错。",
+    "引用外部技能的技能，必须在正文里注明它是外部的（不随本仓库分发）。",
+    "ADW（academic-deep-writer 论文智能体）曾于 2026-10-22 之前是论文线的唯一执行引擎；当日论文线已回仓（9 个 K-Dense MIT 论文类技能 + 3 个本项目原创：citation-audit / assertive-writing / submission-readiness），E2 / E4 / E5 / E9 四格因此改标「已覆盖」。ADW 已从本表移除 —— 它不再是矩阵依赖，也不再是仓库内技能的交叉引用目标。用户本机若装有 ADW，可作为可选增强自行搭配使用。",
+    "2026-10-22 幻灯片线自研：`pptx`（运行时内置的 PPTX 生成器）与 `nature-paper2ppt`（本机全局的论文转 PPT）已从本表移除。理由与 ADW 同源 —— **能力必须随交付物走**：这两个都不随本仓库分发，克隆后「做个组会汇报」无人接手。现由本仓库自研的 `teaching-slide-designer`（含纯标准库 PPTX 生成器 build_pptx.py 与教学规范审查器 slide_spec_lint.py）与 `paper-to-talk-designer` 承担。守卫 `verify_repo.py` 的「幻灯片能力自足」一组会机械拦截它们重新出现。"
+  ],
+  "skills": {
+    "nature-figure": {
+      "provider": "本机全局技能库",
+      "location": ".minimax/skills/nature-figure",
+      "role": "科研图表绘制与导出"
+    },
+    "nature-proposal-writer": {
+      "provider": "本机全局技能库",
+      "location": ".minimax/skills/nature-proposal-writer",
+      "role": "项目申请书写作（与私有 grant-proposal-writer 分工）"
+    },
+    "nature-ref-verifier": {
+      "provider": "本机全局技能库",
+      "location": ".minimax/skills/nature-ref-verifier",
+      "role": "文献逐条交叉核验"
+    },
+    "nature-response": {
+      "provider": "本机全局技能库",
+      "location": ".minimax/skills/nature-response",
+      "role": "审稿意见回复与返修包"
+    },
+    "paper-format-adapter": {
+      "provider": "本机全局技能库",
+      "location": ".minimax/skills/paper-format-adapter",
+      "role": "按目标期刊格式要求改排论文"
+    },
+    "researchwrite": {
+      "provider": "运行时技能目录（无本地文件）",
+      "location": "(runtime-managed)",
+      "role": "研究计划 / 开题报告 / 科研项目申请书写作"
+    },
+    "empirical-lint": {
+      "provider": "本机 mavis agent 私有技能",
+      "location": ".minimax/agents/mavis/skills/empirical-lint",
+      "role": "功效分析、样本量、MDE 反解与统计 lint"
+    },
+    "docx": {
+      "provider": "运行时内置技能",
+      "location": ".minimax/.builtin-skills/docx",
+      "role": "Word 文档生成 / 编辑 / 排版"
+    },
+    "pdf": {
+      "provider": "运行时内置技能",
+      "location": ".minimax/.builtin-skills/pdf",
+      "role": "PDF 生成与读取"
+    }
+  }
+}

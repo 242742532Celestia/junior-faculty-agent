@@ -1,0 +1,190 @@
+# License
+
+Copyright (c) 2026 一左一右
+
+## 本项目可商用
+
+本项目包含两类第三方内容（详见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)）：
+
+| 内容 | 数量 | 许可 | 商业使用 | 关键约束 |
+|---|---|---|---|---|
+| 教学技能（`education-agent-skills`） | 50 | **CC BY-SA 4.0** | ✅ 允许 | **ShareAlike 传染** —— 改编后的版本须以 CC BY-SA 4.0 分发 |
+| 科研技能（`scientific-agent-skills`） | 20 | MIT | ✅ 允许 | 保留版权声明与许可声明 |
+| 本项目自有原创部分 | — | MIT | ✅ 允许 | 见下方「自有原创部分的许可」 |
+
+**本项目整体可用于商业用途。**
+
+> ### 为什么强调这一点
+>
+> 本项目曾包含 3 个 **CC BY-NC 4.0**（NonCommercial，仅限非商业）技能
+> （`academic-paper` / `academic-paper-reviewer` / `deep-research`）。
+> NonCommercial 条款会传染到整个分发物 —— 只要它们在包里，整个仓库就不能商用。
+>
+> 这 3 个技能已移出到 `skills-archive/`（**不随本仓库分发**），
+> 详见该目录下的 `README.md`。**分发版不含任何 NonCommercial 内容。**
+>
+> ⚠️ 注意：**CC BY-SA 4.0 本身是允许商用的**，它的约束是"改编部分必须同许可分发"，
+> 不是"禁止商用"。所以移出 NC 内容后，本项目可商用，但**不能整体改标为 MIT**——
+> 50 个教学技能（含中国高校语境适配段）必须保留 CC BY-SA 4.0 与署名。
+
+### 使用本项目时必须遵守：
+
+1. **分发本项目时必须保留**：
+   - 本文件
+   - [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
+   - [`NOTICE.md`](NOTICE.md)
+   - `licenses/` 目录下的两份上游许可副本
+     （`CC-BY-SA-4.0-education-agent-skills.txt`、`MIT-K-Dense.txt`）
+   - 各教学技能 SKILL.md 末尾的「高校语境适配」改编说明段
+
+2. **ShareAlike 传染**：本项目对 50 个教学技能做了改编（追加中国高校语境适配），
+   **改编后的版本须以 CC BY-SA 4.0 分发**。若你要把这些教学技能并入自己的
+   商业产品，该产品中对应部分需按 CC BY-SA 4.0 授权。
+
+3. **署名**：分发时必须注明原作者
+   Gareth Manning（CC BY-SA 4.0）与 K-Dense Inc.（MIT），
+   并说明已做修改（改了什么、为什么改 —— 见 `NOTICE.md`）。
+
+4. **不得把 `skills-archive/` 混入分发物**：该目录是本地自用的非商业内容副本，
+   含 CC BY-NC 4.0 材料，一经分发即破坏上条的商业可用性。
+   `scripts/package_release.py` 会校验分发包中不含它。
+
+---
+
+## 自有原创部分的许可
+
+以下内容为原创，单独适用 **MIT License**：
+
+```
+agent.md
+README.md
+LICENSE
+NOTICE.md
+references/he-context-adapter.md
+references/faculty-capability-matrix.md
+references/rejected-skills.md
+references/upstream-candidates.json
+references/external-skills.json
+references/profiles.json
+references/skill-rewrite-spec.md
+references/rewrite-manifest.json
+references/third-party-provenance.md
+scripts/skill_scan.py
+scripts/profile_map.py
+scripts/verify_repo.py
+scripts/test_verify_repo.py
+scripts/verify_rewrite.py
+scripts/package_release.py
+scripts/sync_rewrite_docs.py
+scripts/normalize_domain.py
+demo/README.md
+demo/run_demo.py
+demo/selfcheck.py
+demo/llm.py
+demo/selftest.py
+demo/course_input.example.json
+demo/prompts/lesson_plan.md
+demo/prompts/exam_paper.md
+demo/prompts/slides.md
+demo/spec/lesson_plan.example.json
+demo/spec/exam_paper.example.json
+demo/spec/slides.example.json
+crons/quarterly-skill-scan.md
+# ── 以下为 OpenMAIC（MIT / THU-MAIC）方法论内核适配，署名见 THIRD-PARTY-NOTICES.md §3 ──
+skills/grant-proposal-writer/
+skills/exam-question-bank/
+skills/teaching-file-builder/
+skills/skill-scan/
+skills/he-context-adapter/
+skills/citation-audit/
+skills/assertive-writing/
+skills/submission-readiness/
+skills/argument-structure-scaffold-generator/
+skills/assessment-design-orchestrator/
+skills/assessment-validity-checker/
+skills/backwards-design-unit-planner/
+skills/checking-for-understanding-protocol-designer/
+skills/cognitive-load-analyser/
+skills/coherent-rubric-logic-builder/
+skills/competency-unpacker/
+skills/coverage-audit/
+skills/criterion-referenced-rubric-generator/
+skills/curriculum-crosswalk/
+skills/dialogic-teaching-move-generator/
+skills/differentiation-adapter/
+skills/discipline-specific-critical-thinking-task-designer/
+skills/discussion-protocol-selector/
+skills/dual-coding-designer/
+skills/error-analysis-protocol/
+skills/explicit-instruction-sequence-builder/
+skills/feedback-quality-analyser/
+skills/formative-assessment-loop-designer/
+skills/formative-assessment-technique-selector/
+skills/gap-analysis-from-student-work/
+skills/hinge-question-designer/
+skills/learning-analytics-interpretation-guide/
+skills/learning-progression-builder/
+skills/learning-target-authoring-guide/
+skills/lesson-observation-protocol-designer/
+skills/lesson-opening-designer/
+skills/lesson-study-cycle-designer/
+skills/pedagogical-content-knowledge-developer/
+skills/practice-problem-sequence-designer/
+skills/productive-failure-protocol/
+skills/project-brief-designer/
+skills/reflective-practice-prompt-generator/
+skills/retrieval-practice-generator/
+skills/scope-and-sequence-designer/
+skills/self-regulation-scaffold-generator/
+skills/single-point-rubric-designer/
+skills/socratic-questioning-sequence-generator/
+skills/source-credibility-evaluation-protocol/
+skills/spaced-practice-scheduler/
+skills/study-strategy-selector/
+skills/teach-back-evaluator/
+skills/teacher-inquiry-cycle-designer/
+skills/technological-pedagogical-content-knowledge-developer/
+skills/think-aloud-script-generator/
+skills/transfer-bridge/
+skills/udl-lesson-auditor/
+skills/udl-options-designer/
+skills/worked-example-fading-designer/
+skills/authentic-context-course-designer/
+skills/feynman-diagnostic-cycle/
+skills/he-context-adapter/
+skills/openmaic-courseware/
+skills/personal-course-pattern-builder/
+skills/teacher-style-profile/
+skills/vocational-task-course/
+# ── 以下为本项目新写的原创技能（不进改写清单、也不由 OpenMAIC 衍生）──
+skills/paper-to-talk-designer/
+skills/teaching-slide-designer/
+reports/（巡检报告与验证产出）
+```
+
+> 注意：原创部分的 MIT 许可**不豁免**本项目整体在分发时须遵守上述第 1–4 条。
+>
+> 这份自有清单与 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) 的「自有原创部分」
+> 一节**必须一致**，由 `scripts/verify_repo.py` 比对。
+
+---
+
+## MIT License（适用于自有原创部分，以及 K-Dense 的 20 个科研技能）
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

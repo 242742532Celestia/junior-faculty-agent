@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞（请勿开公开 issue）
+    url: https://github.com/OWNER/REPO/security/advisories/new
+    about: 私下报告，细节在修复发布前不公开。详见 SECURITY.md
+  - name: 许可与归属问题
+    url: https://github.com/OWNER/REPO/issues/new?template=feature_request.yml
+    about: 某个技能的许可状态、署名、NC 传染风险等

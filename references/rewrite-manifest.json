@@ -1,0 +1,215 @@
+{
+  "_comment": "50 个教学技能从上游 CC BY-SA 原文改写为本项目原创 MIT 版本的清单。domain 是上游目录（用于取原文做 clean-room 相似度比对）；改写完成后 status 改为 done 并移除上游 skill_id。 ｜ own_base 是**本项目自有、但使用自有格式**的技能（不走中文教学模板），列在这里是为了让「哪些技能套用中文教学技能结构模板」有唯一判据来源 —— 模板技能的集合 = 本清单 50 个 + (已装技能 − own_base − K-Dense − NC)。不要用「文件里有没有那 10 个章节」来圈定：那样会让「删掉一个章节」这个错误自动把技能踢出被检查集合，检查就变得不可证伪。",
+  "own_base": [
+    "grant-proposal-writer",
+    "exam-question-bank",
+    "teaching-file-builder",
+    "skill-scan",
+    "he-context-adapter",
+    "citation-audit",
+    "assertive-writing",
+    "submission-readiness"
+  ],
+  "skills": {
+    "argument-structure-scaffold-generator": {
+      "domain": "literacy-critical-thinking",
+      "status": "todo"
+    },
+    "assessment-design-orchestrator": {
+      "domain": "original-frameworks",
+      "status": "todo"
+    },
+    "assessment-validity-checker": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "backwards-design-unit-planner": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "checking-for-understanding-protocol-designer": {
+      "domain": "explicit-instruction",
+      "status": "todo"
+    },
+    "cognitive-load-analyser": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    },
+    "coherent-rubric-logic-builder": {
+      "domain": "original-frameworks",
+      "status": "todo"
+    },
+    "competency-unpacker": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "coverage-audit": {
+      "domain": "curriculum-alignment",
+      "status": "todo"
+    },
+    "criterion-referenced-rubric-generator": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "curriculum-crosswalk": {
+      "domain": "curriculum-alignment",
+      "status": "todo"
+    },
+    "dialogic-teaching-move-generator": {
+      "domain": "questioning-discussion",
+      "status": "todo"
+    },
+    "differentiation-adapter": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "discipline-specific-critical-thinking-task-designer": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "discussion-protocol-selector": {
+      "domain": "questioning-discussion",
+      "status": "todo"
+    },
+    "dual-coding-designer": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    },
+    "error-analysis-protocol": {
+      "domain": "self-regulated-learning",
+      "status": "todo"
+    },
+    "explicit-instruction-sequence-builder": {
+      "domain": "explicit-instruction",
+      "status": "todo"
+    },
+    "feedback-quality-analyser": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    },
+    "formative-assessment-loop-designer": {
+      "domain": "ai-learning-science",
+      "status": "todo"
+    },
+    "formative-assessment-technique-selector": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "gap-analysis-from-student-work": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "hinge-question-designer": {
+      "domain": "questioning-discussion",
+      "status": "todo"
+    },
+    "learning-analytics-interpretation-guide": {
+      "domain": "ai-learning-science",
+      "status": "todo"
+    },
+    "learning-progression-builder": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "learning-target-authoring-guide": {
+      "domain": "original-frameworks",
+      "status": "todo"
+    },
+    "lesson-observation-protocol-designer": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "lesson-opening-designer": {
+      "domain": "explicit-instruction",
+      "status": "todo"
+    },
+    "lesson-study-cycle-designer": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "pedagogical-content-knowledge-developer": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "practice-problem-sequence-designer": {
+      "domain": "explicit-instruction",
+      "status": "todo"
+    },
+    "productive-failure-protocol": {
+      "domain": "student-learning",
+      "status": "todo"
+    },
+    "project-brief-designer": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "reflective-practice-prompt-generator": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "retrieval-practice-generator": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    },
+    "scope-and-sequence-designer": {
+      "domain": "curriculum-assessment",
+      "status": "todo"
+    },
+    "self-regulation-scaffold-generator": {
+      "domain": "self-regulated-learning",
+      "status": "todo"
+    },
+    "single-point-rubric-designer": {
+      "domain": "original-frameworks",
+      "status": "todo"
+    },
+    "socratic-questioning-sequence-generator": {
+      "domain": "questioning-discussion",
+      "status": "todo"
+    },
+    "source-credibility-evaluation-protocol": {
+      "domain": "literacy-critical-thinking",
+      "status": "todo"
+    },
+    "spaced-practice-scheduler": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    },
+    "study-strategy-selector": {
+      "domain": "self-regulated-learning",
+      "status": "todo"
+    },
+    "teach-back-evaluator": {
+      "domain": "student-learning",
+      "status": "todo"
+    },
+    "teacher-inquiry-cycle-designer": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "technological-pedagogical-content-knowledge-developer": {
+      "domain": "professional-learning",
+      "status": "todo"
+    },
+    "think-aloud-script-generator": {
+      "domain": "explicit-instruction",
+      "status": "todo"
+    },
+    "transfer-bridge": {
+      "domain": "student-learning",
+      "status": "todo"
+    },
+    "udl-lesson-auditor": {
+      "domain": "inclusive-design",
+      "status": "todo"
+    },
+    "udl-options-designer": {
+      "domain": "inclusive-design",
+      "status": "todo"
+    },
+    "worked-example-fading-designer": {
+      "domain": "memory-learning-science",
+      "status": "todo"
+    }
+  }
+}

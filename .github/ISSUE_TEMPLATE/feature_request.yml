@@ -1,0 +1,57 @@
+name: 技能 / 功能建议
+description: 提议一个新技能、新能力或新判据
+title: "[feat] "
+labels: ["enhancement", "需讨论"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        新增能力前请先看 [能力矩阵](references/faculty-capability-matrix.md)：
+        那里已经标了每个能力格是「已覆盖 / 部分覆盖 / 空白」。
+        如果某个格子是空白，那多半就是该补的位置。
+
+  - type: textarea
+    id: gap
+    attributes:
+      label: 要补的是哪个能力格
+      description: 写矩阵编号（如 E3 / A4）与它的名字
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你提议怎么做
+      description: 目录结构 / SKILL.md 的小节 / 判据规则码
+    validations:
+      required: true
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 怎么判断它「做好了」
+      description: |
+        本项目的规矩是：**能变成机器判据的，就不要写成"注意一下"**。
+        如果这条能力能被机械判定，请给出判据的规则码与判定条件。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: origin
+    attributes:
+      label: 来源
+      options:
+        - 原创
+        - 改写自某个上游仓库（请在正文写明仓库与许可）
+        - 受 OpenMAIC 方法论内核启发
+        - 来自教学实践 / 论文
+    validations:
+      required: true
+
+  - type: textarea
+    id: license
+    attributes:
+      label: 许可与溯源
+      description: 若非原创：上游地址、许可类型、你是如何重写的
+    validations:
+      required: false

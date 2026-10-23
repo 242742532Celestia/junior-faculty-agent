@@ -1,0 +1,39 @@
+# ============================================================
+# openmaic-courseware · 增量 override 编排
+# ------------------------------------------------------------
+# 本文件是 **增量 override**，不是完整编排。
+# 必须与 OpenMAIC 仓库根目录的 docker-compose.yml 一起使用：
+#
+#   cd /path/to/OpenMAIC
+#   docker compose -f docker-compose.yml \
+#                  -f /path/to/junior-faculty-agent/skills/openmaic-courseware/deploy/docker-compose.jfa.yml \
+#                  up --build
+#
+# 本文件 **不含** postgres / render-service 等上游服务定义；
+# 那些由上游 compose 提供，用 --profile 启用。
+#
+# 改编自 OpenMAIC（MIT，Copyright (c) 2026 THU-MAIC）。
+# 改动点：
+#   1. 宿主端口可配，默认 3001（避开 3000 常用占用），容器内仍固定 3000
+#   2. 追加 COOKIE_SECURE=0（纯 HTTP 本地部署；否则浏览器拒收 Secure cookie）
+#   3. ACCESS_CODE 以 ${ACCESS_CODE:-} 透传（不设即为空，等于不开访问码）
+#   4. 追加数据卷 openmaic-data:/app/data（与上游同名卷，追加而非覆盖）
+#
+# 提示：上游 compose 若也发布了宿主端口，Compose 会把两组端口都映射，
+#      此时 3000 仍会暴露。要只保留 3001，请在上游 compose 里改端口，
+#      或把本文件的 ports 段改成 `ports: !override`（需 Compose v2.24+；
+#      该写法不能被通用 YAML 解析器解析，故本文件保持标准 YAML）。
+# ============================================================
+
+services:
+  openmaic:
+    ports:
+      - "${OPENMAIC_HOST_PORT:-3001}:3000"
+    environment:
+      COOKIE_SECURE: "0"
+      ACCESS_CODE: "${ACCESS_CODE:-}"
+    volumes:
+      - openmaic-data:/app/data
+
+volumes:
+  openmaic-data:

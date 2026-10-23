@@ -1,0 +1,65 @@
+name: Bug 报告
+description: 报告一个可复现的问题
+title: "[bug] "
+labels: ["bug", "需要复现"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你发现问题。请尽量把「怎么坏的」写成**可复现**的步骤 ——
+        本项目的判据都是机器判据，能复现的问题通常也能变成一条判据。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 期望的行为 vs 实际的行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 怎么复现
+      description: 命令或步骤，从干净状态开始
+      placeholder: |
+        git clone <repo> && cd junior-faculty-agent
+        python scripts/verify_repo.py
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你期望什么
+      description: 如果是判据报错，请写清「这条判据在防什么」
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: OS、Python 版本、是否在中文 Windows
+      placeholder: Windows 11 / Python 3.9 / 中文系统
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 报错输出
+      description: 完整的 FAIL 行，不是截图
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 请确认
+      options:
+        - label: 我已确认这是**本次改动**引入的（不是改动前就有的）
+          required: false
+        - label: 我没有在 issue 里粘贴任何密钥或真实学生数据
+          required: true
+        - label: 我知道本仓库要求 Windows 下设 `PYTHONIOENCODING=utf-8`
+          required: false

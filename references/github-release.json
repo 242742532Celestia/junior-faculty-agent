@@ -1,0 +1,30 @@
+{
+  "_rules": [
+    "本文件是「GitHub 发布」的单一数据源：仓库名、描述、topics、主页都写在这里，",
+    "发布说明与源码包的元数据由 scripts/github_release.py 从这里读取 ——",
+    "不写第二遍，就不会漂移。",
+    "owner 允许为空（尚未创建 GitHub 仓库时）：此时发布说明里的链接自动用 OWNER/REPO 占位，",
+    "填上 owner 后重跑 `python scripts/github_release.py --build` 即可，不需要改任何别的文件。"
+  ],
+
+  "owner": "",
+  "repo": "junior-faculty-agent",
+  "primary_branch": "main",
+
+  "description": "面向高校一线教师与科研人员的开源 AI 教学/科研技能集：可商用、可克隆即用，判据全部机器可判定",
+  "topics": [
+    "teaching",
+    "higher-education",
+    "lesson-plan",
+    "course-design",
+    "backwards-design",
+    "openai-compatible",
+    "agents",
+    "skills",
+    "chinese",
+    "pptx"
+  ],
+  "homepage": "",
+
+  "release_notes_intro": "面向高校一线教师与科研人员的开源 AI 教学/科研技能集。全部判据机器可判定，克隆即用；本仓库原创内容 MIT，第三方内容各自保留原许可，NonCommercial 内容不随本仓库分发。"
+}
