@@ -444,11 +444,11 @@ README 若写自己手边有上游时的数字，读者实跑对不上却不知�
 ### 三步发布
 
 ```bash
-# ① 在 GitHub 上建一个空仓库（不要勾选 README/LICENSE —— 本仓库自带）
-#    然后填一次配置：编辑 references/github-release.json 里的 "owner"
+# ① 建仓库 + 填一次配置：编辑 references/github-release.json 里的 "owner"
 #    （仓库名 / 描述 / topics 的唯一出处，填完重跑一次出包脚本即可）
-#    ⚠️ 填完 owner 后，守卫会要求把文档里残留的 OWNER/REPO 占位换成真名
+#    ⚠️ owner 一填上，守卫就会要求把文档里残留的 OWNER/REPO 占位换成真名
 #       （它会指名道姓地告诉你是哪两个文件：Issue 模板与 CHANGELOG）
+#    ✅ 本仓库已填好：242742532Celestia/junior-faculty-agent
 
 # ② 打标签即发布：release.yml 会自动出包、复核、挂到 Release
 git tag v1.0.0

@@ -7,7 +7,7 @@
     "填上 owner 后重跑 `python scripts/github_release.py --build` 即可，不需要改任何别的文件。"
   ],
 
-  "owner": "",
+  "owner": "242742532Celestia",
   "repo": "junior-faculty-agent",
   "primary_branch": "main",
 

@@ -97,4 +97,4 @@
 - `references/faculty-capability-matrix.md` 里的能力格是**当前机器判据下的结论**，
   不是"某人的判断" —— 但它记录的是建库当时的快照，最新状态以 README 为准。
 
-[1.0.0]: https://github.com/OWNER/REPO/releases/tag/v1.0.0
+[1.0.0]: https://github.com/242742532Celestia/junior-faculty-agent/releases/tag/v1.0.0
