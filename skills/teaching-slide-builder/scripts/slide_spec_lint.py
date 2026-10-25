@@ -146,8 +146,15 @@ def _body_units(sld):
 
 
 def _chars(s):
-    """字符数：中文按 1 个字算，忽略空白。"""
-    return len(re.sub(r"\s", "", s or ""))
+    """字符数：中文按 1 个字算，忽略空白。
+
+    🔴 **公式按渲染后的等效字形数算**，不是源码长度 ——
+       `$\\zeta = \\frac{\\gamma}{\\omega_{0}}$` 源码 30 个字符，
+       印出来只有 4~5 个字宽；按源码算会凭空多算二十来个字，
+       于是「这条要点太长了」的警告和「这页装不下」的报错都会误报。
+       度量模型在 `slide_layouts.py`（几何的单一出处），两处共用同一套。
+    """
+    return L.visible_chars(s)
 
 
 def lint(spec, th=None):
@@ -263,6 +270,16 @@ def lint(spec, th=None):
         #    于是"设计的 24pt"实际变成 18pt，而版面看起来还是正常的。
         #    这是静默失效，光看字数（L02/L04）看不出来。
         for ov in L.overflow(sld):
+            # 🔴 表格页的判据落在**整张表**上（单元格行高按内容自适应），
+            #    话术要跟着换：说「表格比正文区高」，而不是「文字装不下」。
+            if ov["slot"] == "Table":
+                add("L15", ERROR, i,
+                    "表格比正文区高：整张表需要约 %d pt，正文区只有 %d pt"
+                    "（超出 %d pt）。行高是按单元格里的公式撑出来的 —— "
+                    "请减少行数，或把撑高的公式挪到别处：%r"
+                    % (int(ov["need"] + 0.5), int(ov["have"]),
+                       int(ov["over"] + 0.5), ov["text"]))
+                continue
             add("L15", ERROR, i,
                 "%s 槽位装不下：文字需要约 %d pt，框高只有 %d pt"
                 "（超出 %d pt）。PowerPoint 会自动缩小这行字，"

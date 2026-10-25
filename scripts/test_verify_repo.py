@@ -747,6 +747,85 @@ def mutate_owner_set_but_placeholder_left(dst):
     _wr(dst, rel2, t2b)
 
 
+def mutate_formula_derive_bypass(dst):
+    """派生层绕过公式规范化 —— 伪公式会原样漏到课件/讲义/教案里。
+
+    🔴 这是「所有生成物都过公式校正」最容易失效的方式：
+       规范化函数还在、名字还在，只是**不再被调用**。
+       ⇒ 守卫必须是**行为判据**（真跑一遍派生看输出），
+          grep `normalize_spec` 判据会被这一条完全骗过。
+    """
+    rel = os.path.join("demo", "outline.py")
+    t = _rd(dst, rel)
+    old = "    mod = _formula_apply()"
+    new = ("    return spec  # MUTATION: 规范化被短路\n"
+           "    mod = _formula_apply()")
+    if old not in t:
+        raise RuntimeError("变异无效：demo/outline.py 里找不到规范化入口")
+    _wr(dst, rel, t.replace(old, new, 1))
+
+
+def mutate_formula_gate_not_wired(dst):
+    """自检不再跑公式闸 —— 产物里的伪公式就没人拦了。"""
+    rel = os.path.join("demo", "selfcheck.py")
+    t = _rd(dst, rel)
+    old = "    for f in gate.check_obj(spec, where):"
+    new = ("    return []  # MUTATION: 闸被摘掉\n"
+           "    for f in gate.check_obj(spec, where):")
+    if old not in t:
+        raise RuntimeError("变异无效：demo/selfcheck.py 里找不到闸调用")
+    _wr(dst, rel, t.replace(old, new, 1))
+
+
+def mutate_formula_gate_wrong_detector(dst):
+    """闸的判据从「再规范化一次会不会变」换成**原始正则**（`scan`）—— 会误伤。
+
+    🔴 这正是技能文档里写明的那个坑：`scan` 是**行级原始正则**，没有上下文，
+       会把示意图箭头 `→`、标识符 `course_code`、甚至**已经写对的 LaTeX**
+       里的 `^{2}` 都报成命中。判据选错 ⇒ 闸天天误报 ⇒ 闸等于没有。
+
+    🔴 定位串必须跟着**现实现**走：FG-01 的判据已经从「find_spans 有没有命中」
+       换成「再规范化一次会不会变」（`formula_apply.normalize_text`），
+       因为 `scan`/`find_spans` 都不认 markdown 的表格行与代码围栏，
+       拿它们当残留判据会**永远报红**（红得没有出口的判据等于没有判据）。
+    """
+    rel = os.path.join("skills", "formula-typesetting", "scripts", "formula_gate.py")
+    t = _rd(dst, rel)
+    old = "    new_text, changes = formula_apply.normalize_text(text, inline=inline)"
+    new = ("    new_text, changes = text, []  # MUTATION: 换成原始正则判残留\n"
+           "    if formula_norm.scan_text(text):\n"
+           "        new_text = new_text + ' '")
+    if old not in t:
+        raise RuntimeError("变异无效：formula_gate.py 里找不到 FG-01 判据行")
+    _wr(dst, rel, t.replace(old, new, 1))
+
+
+def mutate_formula_not_idempotent(dst):
+    """幂等早退守卫被摘掉 —— 已规范化的文本被**又处理了一遍**。
+
+    🔴 幂等是**硬要求**：派生产物会被反复重算；
+       不幂等 ⇒ 「讲义讲稿 ≠ 课件讲稿」这类同源判据会凭空变红。
+
+    🔴 这条变异打的是「**早退守卫**」而不是「输出变了」：
+       摘掉 `if not find_spans(text): return text, []` 之后，
+       `normalize_text` 对**已经规范化过的文本**也会再跑一遍 `fix_text`。
+       输出字面看着一样（`fix_text` 现在本身是幂等的），
+       但**变更列表不再为空** ⇒ 「需人工复核 ⇒ 停下来报错」的逻辑被无谓触发，
+       而且「它被改过」这件事被记成了「它刚被处理过」——
+       报告里全是假改动，真的改动反而被淹没。
+
+    ⇒ 所以判据不能只看「跑两遍输出一样不一样」，还要看
+       「**已规范化的文本不该再产生任何变更**」。
+    """
+    rel = os.path.join("skills", "formula-typesetting", "scripts", "formula_apply.py")
+    t = _rd(dst, rel)
+    old = "    if not formula_norm.find_spans(text):\n        return text, []"
+    new = "    # MUTATION: 幂等守卫被去掉"
+    if old not in t:
+        raise RuntimeError("变异无效：formula_apply.py 里找不到幂等守卫")
+    _wr(dst, rel, t.replace(old, new, 1))
+
+
 MUTATIONS = [
     # (说明, 变异函数, 预期被触发的检查名关键词)
     ("README 格数改回 45", mutate_readme_grid, "格数"),
@@ -806,6 +885,11 @@ MUTATIONS = [
     ("模型路由删掉 lint 用途", mutate_llm_drop_lint_purpose, "模型按用途路由"),
     ("GitHub 骨架件被删", mutate_github_drop_ci, "GitHub 开源件齐全"),
     ("CI 不再跑本仓库的判据", mutate_ci_stops_running_gates, "CI 真的跑本仓库的判据"),
+    ("派生层绕过公式规范化", mutate_formula_derive_bypass,
+     "派生层真的规范化了伪公式"),
+    ("自检不再跑公式闸", mutate_formula_gate_not_wired, "自检挂了公式验收闸"),
+    ("闸的判据从 find_spans 换成 scan", mutate_formula_gate_wrong_detector, "不误伤"),
+    ("公式规范化不再幂等", mutate_formula_not_idempotent, "幂等"),
     ("CI 矩阵里删掉 Windows", mutate_ci_drops_windows_matrix,
      "CI 覆盖 Windows 与 Python 3.9"),
     ("发布配置被写坏", mutate_github_config_broken, "GitHub 发布配置完整"),

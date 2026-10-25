@@ -312,6 +312,7 @@ skills/vocational-task-course/
 skills/paper-to-talk-designer/
 skills/teaching-slide-builder/
 skills/teaching-slide-designer/
+skills/formula-typesetting/
 reports/（巡检报告与验证产出）
 ```
 

@@ -635,6 +635,33 @@ def check_slides(spec):
 
 
 # ─────────────────────────────────────────────────────────────────
+# 公式：复用仓库自带的公式验收闸
+# ─────────────────────────────────────────────────────────────────
+def check_formula(spec, where=""):
+    """公式自检：直接用仓库自带的 formula_gate（判据不重写一份）。
+
+    🔴 这条判据回答的是「生成物里还有没有**没被校正**的伪公式」。
+       它必须在**派生之后**跑 —— 规范化在派生层做（见 `demo/outline.py`），
+       这里检查它**真的做到了**：规范化的产物里不该再有伪公式。
+
+    🔴 判据只用上下文判定（`find_spans`），不用原始正则（`scan`）：
+       后者会把示意图箭头 `→`、标识符 `course_code`、甚至**已经写对的
+       LaTeX** 里的 `^{2}` 都报成命中 —— 判据误伤 ⇒ 守卫天天红 ⇒ 守卫等于没有。
+    """
+    out = []
+    try:
+        gate = _load_skill_module(
+            "skills/formula-typesetting/scripts/formula_gate.py",
+            "jfa_formula_gate")
+    except Exception as e:
+        _add(out, ERROR, "FM-P00", "formula_gate", "加载失败：%s" % e)
+        return out
+    for f in gate.check_obj(spec, where):
+        out.append(Finding(f.level, f.rule, f.where, f.message))
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────
 def summarize(findings):
     err = sum(1 for f in findings if f.level == ERROR)
     warn = sum(1 for f in findings if f.level == WARN)

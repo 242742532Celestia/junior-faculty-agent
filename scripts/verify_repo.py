@@ -180,7 +180,7 @@ SAME_SURNAME_MULTI_AUTHOR = {
 def check_skill_counts():
     skills = installed_skills()
     total = len(skills)
-    check("技能总数 = 87", total == 87, "实际 %d" % total)
+    check("技能总数 = 88", total == 88, "实际 %d" % total)
 
     buckets = {"edu": [], "kdense": [], "nc": [], "own": []}
     for s in sorted(skills):
@@ -905,6 +905,154 @@ def check_slide_selfsufficiency():
     # 版式原型表：渲染器与判据共用的那一份几何。表坏了 ⇒ 渲染和判据一起坏。
     ok3, d3 = _run_script(SLIDE_LAYOUTS, [])
     check("版式原型表自检通过（几何与文字高度表自洽）", ok3, d3)
+
+
+# ─────────────────────────────────────────────────────────────
+# 4b. 公式校正线：必须接在链路上，而且闸必须会红
+#
+# 🔴 为什么要有这一组：「所有生成物都经过公式校正」如果只写在文档里，
+#    它就只是一句话 —— 判据必须能证明四件事：
+#      ① 技能的四支脚本都在（检测 / 规范化 / 注入 / 闸）；
+#      ② **派生层真的调用了规范化**（不是只在某个分支里）；
+#      ③ **自检真的挂了闸**（产物出问题时会被拦住）；
+#      ④ **闸对坏样本报红、对好样样放行** —— 最后这条最硬：
+#         它证明的是「闸会红」，而不只是「闸在」。
+#         只测「闸在」的判据，闸坏掉时不会有人知道。
+#
+#    ④ 用**自造的样例**而不是仓库现状 —— 仓库现状随时可能变干净，
+#    拿现状当判据的守卫会变成空变异（状态一变就测不出东西了）。
+# ─────────────────────────────────────────────────────────────
+FORMULA_SKILL = "skills/formula-typesetting"
+FORMULA_SCRIPTS = ("scripts/formula_norm.py", "scripts/formula_apply.py",
+                   "scripts/formula_gate.py", "scripts/pptx_omml_inject.py")
+
+
+def _load_repo_module(rel_path, name):
+    """按仓库内相对路径加载一个脚本模块。"""
+    import importlib.util
+    p = os.path.join(ROOT, rel_path.replace("/", os.sep))
+    sp = importlib.util.spec_from_file_location(name, p)
+    mod = importlib.util.module_from_spec(sp)
+    sp.loader.exec_module(mod)
+    return mod
+
+
+def check_formula_wiring():
+    for rel in FORMULA_SCRIPTS:
+        check("公式技能带 %s" % rel,
+              os.path.isfile(os.path.join(ROOT, FORMULA_SKILL,
+                                          rel.replace("/", os.sep))),
+              "缺 %s" % rel)
+
+    # ② 派生层真的把伪公式规范化了 —— **行为判据，不查文本**
+    #    🔴 为什么不用 grep：`normalize_spec` 这几个字出现在文件里
+    #       不等于它被调用了 —— 把调用改名、挪进死分支，grep 照样全绿。
+    #       判据必须能证伪 ⇒ 造一份**带伪公式的最小大纲**，真跑一遍派生，
+    #       看输出里还有没有伪公式。
+    try:
+        om = _load_repo_module("demo/outline.py", "jfa_outline_probe")
+        gate = _load_repo_module(
+            FORMULA_SKILL + "/scripts/formula_gate.py", "jfa_formula_gate_probe")
+        apply_mod = _load_repo_module(
+            FORMULA_SKILL + "/scripts/formula_apply.py", "jfa_formula_apply_probe")
+    except Exception as e:
+        check("公式线脚本可加载", False, "加载失败：%s" % e)
+        return
+
+    probe = {
+        "meta": {"course": "探针"},
+        "deck": {"meta": {"title": "探针"}},
+        "modules": [{
+            "id": "M1", "title": "模块",
+            "steps": [{
+                "id": "S1", "minutes": 5, "teacher": "t", "student": "s",
+                "intent": "i", "objective": "O1",
+                "slides": [{"id": "P1", "layout": "bullets", "title": "标题",
+                            "bullets": [{"text": "c = B\u00b2L\u00b2/R", "level": 0}],
+                            "notes": "讲稿 ω_d"}],
+            }],
+        }],
+    }
+    try:
+        sl = om.to_slides(probe)["slides"][0]
+        bullet = (sl.get("bullets") or [{}])[0].get("text", "")
+        notes = sl.get("notes", "")
+    except Exception as e:
+        check("派生层可跑（公式线探针）", False, "派生失败：%s" % e)
+        return
+
+    left = gate.check_text(bullet, "bullet") + gate.check_text(notes, "notes")
+    check("派生层真的规范化了伪公式（行为判据）",
+          not any(f.rule == "FG-01" for f in left),
+          "派生产物里仍有伪公式：%r / %r" % (bullet, notes))
+
+    # ③ 自检真的挂了闸 —— 同样用行为判据
+    try:
+        sc = _load_repo_module("demo/selfcheck.py", "jfa_selfcheck_probe")
+        fs = sc.check_formula({"x": "c = B\u00b2L\u00b2/R"}, "探针")
+    except Exception as e:
+        check("自检可跑（公式线探针）", False, "加载/调用失败：%s" % e)
+        fs = []
+    check("自检挂了公式验收闸（产物出问题时会被拦住）",
+          any(f.rule == "FG-01" and f.level == "ERROR" for f in fs),
+          "selfcheck.check_formula 没报出 FG-01 —— 闸没接上")
+
+    # ④ 闸本身：对坏样本报红、对好样样放行
+    bad = gate.check_text("c = B\u00b2L\u00b2/R", "样例")
+    check("公式闸对伪公式报红（FG-01）",
+          any(f.rule == "FG-01" and f.level == "ERROR" for f in bad),
+          "自造的伪公式样例没被拦住")
+
+    good = gate.check_text("阻尼系数 $\\frac{B^{2}L^{2}}{R}$", "样例")
+    check("公式闸不误伤已规范化的 LaTeX",
+          not any(f.rule == "FG-01" for f in good),
+          "已规范化的 LaTeX 被误判为残留伪公式")
+
+    arrow = gate.check_text("左半：原图直方图 → 均衡化后直方图", "样例")
+    check("公式闸不误伤示意图箭头与标识符",
+          not any(f.rule == "FG-01" for f in arrow),
+          "示意图箭头 / 标识符被误判为残留伪公式")
+
+    # ④-② 第二种公式：**只有字母和运算符的简单关系式**（`F = -BLi`）。
+    #      它不带任何 LaTeX 命令 ⇒ 窄的「像不像 LaTeX」判据认不出它。
+    #      实测后果：课件正文页直接显示 `$F = -BLi$` 源码，
+    #      **而验收闸照样报「零 ERROR」** —— 注入器与闸两处同源漏判。
+    #      ⇒ 这组判据要能自己证明「它认得这种公式」，否则同一个洞会再漏一次。
+    try:
+        inj = _load_repo_module(FORMULA_SKILL + "/scripts/pptx_omml_inject.py",
+                                "jfa_omml_inject_probe")
+    except Exception as e:
+        inj = None
+        check("注入器可加载（公式线探针）", False, "加载失败：%s" % e)
+    if inj is not None:
+        check("注入器认得「只有字母和运算符」的简单关系式",
+              bool(inj.find_latex_spans("$F = -BLi$")),
+              "注入器没把 `$F = -BLi$` 当公式 —— 正文页会直接显示 LaTeX 源码")
+        check("注入器不把货币当公式",
+              not inj.find_latex_spans("$50$"),
+              "`$50$`（价格）被当成公式了")
+
+    simple = gate.check_text("$F = -BLi$", "样例", skip_latex_literal=False)
+    check("公式闸能报出正文页残留的简单关系式源码（FG-02）",
+          any(f.rule == "FG-02" and f.level == "ERROR" for f in simple),
+          "闸没报 FG-02 —— 正文页显示 LaTeX 源码却没人拦")
+
+    # ⑤ 规范化必须幂等 —— 派生产物会被反复重算，不幂等就会破坏「讲稿逐字同源」
+    once, _ = apply_mod.normalize_text("c = B\u00b2L\u00b2/R")
+    twice, _ = apply_mod.normalize_text(once)
+    check("公式规范化是幂等的（跑两遍一字不改）", once == twice,
+          "第一遍 %r ／ 第二遍 %r" % (once, twice))
+
+    # ⑤-② 已规范化的文本**不该再产生任何变更** ——
+    #      「输出一样」只是幂等的一半；另一半是「**别再动它**」。
+    #      少了这道判据，「幂等早退守卫」被摩掉时没人发现：
+    #      `fix_text` 本身幂等 ⇒ 输出看着没变，
+    #      但变更列表里会多出「已处理过」这种**假改动** ——
+    #      报告被假改动淹没，真的改动反而看不见，
+    #      而且「需人工复核 ⇒ 停下来报错」的逻辑被无谓触发。
+    _txt, _ch = apply_mod.normalize_text("$\\frac{B^{2}L^{2}}{R}$")
+    check("已规范化的文本不再产生变更（幂等早退守卫生效）",
+          not _ch, "变更列表非空：%d 条（说明它被又处理了一遍）" % len(_ch))
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1755,6 +1903,7 @@ def main():
     _guard_call("外部技能登记表", check_external_skills)
     _guard_call("幻灯片能力自足", check_slide_selfsufficiency)
     _guard_call("幻灯片阈值单一出处", check_slide_thresholds_sync)
+    _guard_call("公式校正线接线", check_formula_wiring)
     _guard_call("分档出包", check_profiles)
     _guard_call("演示程序", check_demo)
     _guard_call("大纲先行层", check_outline_layer)

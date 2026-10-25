@@ -55,7 +55,13 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(HERE)
 SPEC_DIR = os.path.join(HERE, "spec")
+
+# 公式规范化层（技能：skills/formula-typesetting）
+# 🔴 路径由本文件位置推导，**不硬编码任何机器绝对路径** ——
+#    这个文件会被交付侧的构建脚本 import 到别的机器上跑。
+FORMULA_SCRIPTS = os.path.join(REPO_ROOT, "skills", "formula-typesetting", "scripts")
 
 # 派生目标：键 = 任务名，值 = 已提交的参考产物文件名
 DERIVED = (
@@ -70,6 +76,57 @@ CONTENT_LAYOUTS = ("bullets", "two-column", "image-focus")
 
 class OutlineError(Exception):
     """大纲不合法（用户输入问题）——退出码 2。"""
+
+
+# ─────────────────────────────────────────────────────────────────
+# 公式规范化（**表示层变换**：不改事实，只改写法）
+# ─────────────────────────────────────────────────────────────────
+_FORMULA_APPLY = None
+
+
+def _formula_apply():
+    """加载技能里的公式规范化层（只加载一次）。"""
+    global _FORMULA_APPLY
+    if _FORMULA_APPLY is not None:
+        return _FORMULA_APPLY
+    import importlib.util
+    path = os.path.join(FORMULA_SCRIPTS, "formula_apply.py")
+    if not os.path.isfile(path):
+        raise OutlineError(
+            "找不到公式规范化层：%s\n"
+            "本仓库要求所有生成物都经过公式校正 —— 缺了它，"
+            "伪公式会原样出现在课件/讲义/教案里。" % path)
+    spec = importlib.util.spec_from_file_location("jfa_formula_apply", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _FORMULA_APPLY = mod
+    return mod
+
+
+def normalize_spec(spec, where=""):
+    """把一份派生规格里的公式规范化，返回新对象。
+
+    🔴 这是**表示层变换**：把伪公式改写成等价的 LaTeX 源码，
+       不改任何事实、不增删任何内容（只改写法）。
+       ⇒ 教案 / 讲义 / 课件 / 讲稿因此必然是**同一份公式** ——
+          不是「各自都改一遍、改得一样」，是「只有一份可改」。
+
+    🔴 **需要人工复核的改动一律中止**（不静默应用）：
+       公式里夹中文常量这类机器改不了的，宁可停下来报错，
+       也不要改出一个没人看过的公式 —— 那比伪公式更危险，
+       因为它看起来像已经被处理过了。
+    """
+    mod = _formula_apply()
+    new, changes = mod.normalize_obj(spec)
+    review = [c for c in changes if c.review]
+    if review:
+        lines = ["%s：%d 处公式需人工复核，已中止（不静默应用）："
+                 % (where or "规格", len(review))]
+        for c in review[:8]:
+            lines.append("  %s  %r -> %r（残留 %s）"
+                         % (c.line, c.before, c.after, "、".join(c.residuals)))
+        raise OutlineError("\n".join(lines))
+    return new
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -124,7 +181,7 @@ def to_lesson_plan(outline):
                 "step": s.get("id", ""),
             })
 
-    return {
+    return normalize_spec({
         "meta": meta,
         "ubd": dict(outline.get("ubd") or {}),
         "objectives": objectives,
@@ -140,7 +197,7 @@ def to_lesson_plan(outline):
         "homework": [dict(h) for h in (outline.get("homework") or [])],
         "reflection": list(outline.get("reflection") or []),
         "needs_manual_check": [dict(e) for e in (outline.get("needs_manual_check") or [])],
-    }
+    }, "教案")
 
 
 def to_slides(outline):
@@ -173,10 +230,10 @@ def to_slides(outline):
                 s["objective"] = st.get("objective", "")
                 slides.append(s)
 
-    return {
+    return normalize_spec({
         "meta": dict(deck.get("meta") or {}),
         "slides": slides,
-    }
+    }, "课件")
 
 
 def to_handout(outline):
@@ -216,8 +273,11 @@ def to_handout(outline):
     meta = dict(outline.get("meta") or {})
     for k, v in ((outline.get("deck") or {}).get("meta") or {}).items():
         meta.setdefault(k, v)
+    # 🔴 只规范化抬头，**不再规范化页面**：页面是从已规范化的课件规格搬过来的，
+    #    再过一遍虽说是幂等的，但一旦有边角情况不幂等，
+    #    「讲义讲稿 ≠ 课件讲稿」就会凭空出现 —— 那是同源判据的红线。
     return {
-        "meta": meta,
+        "meta": normalize_spec(meta, "讲义抬头"),
         "pages": pages,
     }
 

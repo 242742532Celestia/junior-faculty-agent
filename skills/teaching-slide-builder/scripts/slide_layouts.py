@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 import sys
 
 # ─────────────────────────────────────────────────────────────────
@@ -83,8 +84,12 @@ BADGE_D = 30.0           # 圆形编号徽章直径（参考稿实测 60px ÷ 2�
 
 # 表格几何
 TABLE_HEAD_H = 29.0      # 表头行高
-TABLE_ROW_H = 30.0       # 数据行高（**固定** —— 行高自适应就失去溢出判据了）
+# 🔴 数据行高是**下限**，不是固定值 —— 见 `_table_geometry` 的说明。
+#    只有当单元格里是**真公式**（分式 / 根式）时，行高才会被撑高；
+#    纯文字表格的行高与从前**逐字节相同**（30pt）。
+TABLE_ROW_H = 30.0
 TABLE_CELL_PAD = 5.0
+TABLE_HEAD_PAD = 6.0     # 表头单元格的内边距（横向也是 6）
 
 # 颜色（设计 token；渲染器与判据共用）
 COLORS = {
@@ -294,22 +299,244 @@ def accent_pair(slide):
 # ─────────────────────────────────────────────────────────────────
 # 文字度量
 # ─────────────────────────────────────────────────────────────────
+# ── 公式（LaTeX）感知 ─────────────────────────────────────────
+#
+# 🔴 为什么判据必须认公式：公式的**源码长度**与它**印出来的宽度**
+#    完全不成比例。
+#    `$\zeta = \frac{\gamma}{\omega_{0}}$` 源码 30 个字符（按 ASCII 算 15 em），
+#    印出来却只有 4~5 em。
+#    按源码量 ⇒ 凭空多折一行 ⇒ **误报溢出** ——
+#    而误报一多，真溢出就被淹没在里面，判据红了也没人看。
+#
+#    所以：宽度与字数都按**渲染后**算，公式按「等效字形数」折算。
+#
+_MATH_SPAN = re.compile(r"\$\$(.+?)\$\$|\$(?!\$)([^$\n]+?)(?<!\$)\$", re.S)
+_MATH_CMD = re.compile(r"\\[A-Za-z]+")
+# 带参数的结构（分数/根号/组合数）比单个字形宽一点
+_MATH_WIDE = ("\\frac", "\\dfrac", "\\tfrac", "\\sqrt", "\\binom")
+
+
+def split_math(s):
+    """把文本切成 [(是否公式, 载荷)]。
+
+    公式载荷是**里面的 LaTeX**（不含 `$` 定界符）。
+    """
+    out = []
+    pos = 0
+    for m in _MATH_SPAN.finditer(str(s or "")):
+        if m.start() > pos:
+            out.append((False, str(s)[pos:m.start()]))
+        inner = m.group(1) if m.group(1) is not None else m.group(2)
+        out.append((True, inner or ""))
+        pos = m.end()
+    if pos < len(str(s or "")):
+        out.append((False, str(s)[pos:]))
+    return out
+
+
+def math_width_em(latex):
+    """估一个 LaTeX 公式**渲染后**的宽度（em）。
+
+    模型刻意简单、刻意保守：
+      · 每个 `\\命令` 记 1 个字形（希腊字母、运算符都约 1 em 宽）；
+        带参数的结构（分数/根号）记 1.3；
+      · 字母、数字各记 0.5 em；
+      · 花括号、空白、上下标标记不计。
+    ⇒ `$\\zeta = \\frac{\\gamma}{\\omega_{0}}$` ≈ 5 em，
+      与它实际印出来的宽度同量级。
+    """
+    s = str(latex or "")
+    w = 0.0
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == "\\":
+            m = _MATH_CMD.match(s, i)
+            if m:
+                w += 1.3 if m.group(0) in _MATH_WIDE else 1.0
+                i = m.end()
+                continue
+            i += 1
+            continue
+        if ch in "{} \t\r\n":
+            i += 1
+            continue
+        w += 0.5 if ord(ch) < 0x2E80 else 1.0
+        i += 1
+    return w
+
+
+def visible_chars(s):
+    """字符数（**公式按渲染后的等效字形数算**，不是源码长度）。
+
+    与 `text_width_em` 同一套模型 ⇒ 两处度量不会打架。
+    """
+    n = 0
+    for is_math, payload in split_math(s):
+        if is_math:
+            n += max(1, int(round(math_width_em(payload) * 2)))
+        else:
+            n += len(re.sub(r"\s", "", payload))
+    return n
+
+
 def text_width_em(s):
     """文本宽度，以 **em** 计：全角 1.0，半角（ASCII/拉丁/西里尔）0.5。
 
     🔴 为什么不用"一个字符算一个字"：那会把 `3×3 均值滤波` 算成 9 em
     （实际约 6 em），从而**凭空多折一行**，误报溢出。
     混排的中文课件里英文缩写很多，按 em 算才准。
+
+    🔴 **公式按渲染后的宽度算**（见 `math_width_em`）：
+    公式源码长度与它印出来的宽度不成比例，按源码算必然误报溢出。
     """
     w = 0.0
-    for ch in str(s or ""):
-        w += 0.5 if ord(ch) < 0x2E80 else 1.0
+    for is_math, payload in split_math(s):
+        if is_math:
+            w += math_width_em(payload)
+            continue
+        for ch in payload:
+            w += 0.5 if ord(ch) < 0x2E80 else 1.0
     return w
 
 
 def text_width_pt(s, font_size):
     """文本的大致宽度（磅）：em 数 × 字号。用于估算容器宽度。"""
     return text_width_em(s) * float(font_size)
+
+
+# ── 公式高度（实测校准，不是猜的）────────────────────────────────
+#
+# 🔴 为什么**宽度**认公式还不够：公式还有**高度**。
+#    `$\sqrt{\frac{k}{m}}$` 在 12pt 下墨迹高 39.5pt，
+#    而表格单元格的文字槽只有 20pt。
+#
+# 🔴 **失效机理**（实测出来的，跟直觉不一样）：
+#    文本框**不会**裁切溢出的公式 —— 墨迹照画。
+#    真正把公式弄坏的是**下一行的色块**：表格行高固定 30pt 时，
+#    公式从本行溢出到下一行，而下一行的填充矩形**画在后面**，
+#    于是把溢出部分盖掉 ⇒ 表现为「分母不见了」「ω₀ 被削掉下半截」
+#    「= 号变成一根横杠」。
+#    ⇒ 判据必须是：**行高 ≥ 公式的墨迹底**，让公式不越界到下一行。
+#
+# 本机实测（PowerPoint 真渲染 + 墨迹包围盒，12pt）：
+#   「需要的高度」= 文字框上沿 → 墨迹底的净高
+#
+#     结构                            实测净高      模型取值
+#     普通文字 12pt                    12.5 pt      1.35 em（= LINE_FACTOR）
+#     下标 `$\omega_{0}$`               13.5 pt      1.35 em
+#     根号 `$\sqrt{k}$`                 15.5 pt      1.35 em
+#     分式 `$\frac{c}{2m}$`             24.0 pt      2.10 em
+#     分式（带上下标）                   26.5/28.5 pt 2.45 em
+#     根号套分式                        42.5 pt      3.65 em
+#     大算子带上下限 `$\sum_{i}^{n}$`    39.0 pt      3.35 em
+#
+#    模型取值都比实测**留了余量**（判宁可偏松，不要让真溢出被淹没）。
+#
+_MATH_FRAC = re.compile(r"\\(?:dfrac|tfrac|frac)\b")
+_MATH_SQRT = re.compile(r"\\sqrt\b")
+_MATH_BIGOP = re.compile(r"\\(?:sum|prod|int|lim)\b")
+
+
+def _brace_args(s, start):
+    """从 s[start] 处的 `{` 开始，取出配对花括号里的内容。"""
+    if start >= len(s) or s[start] != "{":
+        return None, start
+    depth = 0
+    for i in range(start, len(s)):
+        if s[i] == "{":
+            depth += 1
+        elif s[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return s[start + 1:i], i + 1
+    return None, len(s)
+
+
+def _sqrt_args(latex):
+    r"""`\sqrt{...}` 的参数列表（可能有多个根号）。"""
+    out = []
+    s = str(latex or "")
+    for m in _MATH_SQRT.finditer(s):
+        i = m.end()
+        while i < len(s) and s[i] in " \t":
+            i += 1
+        # 跳过可选的 [n] 指数
+        if i < len(s) and s[i] == "[":
+            j = s.find("]", i)
+            if j > 0:
+                i = j + 1
+        arg, _end = _brace_args(s, i)
+        if arg is not None:
+            out.append(arg)
+    return out
+
+
+def _frac_args(s):
+    """`\frac{..}{..}` 的分子、分母参数列表。"""
+    out = []
+    for m in _MATH_FRAC.finditer(s):
+        i = m.end()
+        for _ in range(2):            # 分子、分母两个参数
+            arg, nxt = _brace_args(s, i)
+            if arg is None:
+                break
+            out.append(arg)
+            i = nxt
+    return out
+
+
+def math_height_em(latex):
+    r"""一个公式渲染后的**高度**（以 em 计，即字号的倍数）。
+
+    🔴 为什么要单独量高度：公式的源码长度与它的**墨迹高**完全不成比例 ——
+       `$\sqrt{\frac{k}{m}}$` 源码 20 个字符，印出来却高 39.5pt（12pt 时）。
+       按源码量高度 ⇒ 公式越界到下一行 ⇒ 被下一行的色块盖掉。
+
+    结构 → 高度（em）：
+      · 基准（无高结构）      1.35（= LINE_FACTOR，与普通文字行同高）
+      · 分式 `\frac`          2.10（带上下标 2.45）
+      · 根号套分式            3.65
+      · 大算子带上下限        3.35
+    """
+    s = str(latex or "")
+    if not s.strip():
+        return LINE_FACTOR
+    em = LINE_FACTOR
+    sqrt_args = _sqrt_args(s)
+    frac_in_sqrt = any(_MATH_FRAC.search(a) for a in sqrt_args)
+    if _MATH_FRAC.search(s):
+        if frac_in_sqrt:
+            em = max(em, 3.65)
+        else:
+            # 分子/分母带上下标 ⇒ 那一栏还要再高一点（实测 26.5 / 28.5 pt）
+            has_script = any("_" in a or "^" in a for a in _frac_args(s))
+            em = max(em, 2.45 if has_script else 2.10)
+    if _MATH_BIGOP.search(s) and ("_" in s or "^" in s):
+        em = max(em, 3.35)
+    return em
+
+
+def math_height_pt(latex, font_size):
+    """公式渲染高度（磅）。"""
+    return math_height_em(latex) * float(font_size)
+
+
+def paragraph_height(text, box_w, font_size, level=0):
+    """一段文字占多高（磅）—— **公式感知**。
+
+    🔴 文字行数按**宽度**算；行高按**内容**算：
+       段落里只要有一个高结构（分式 / 根式），**含它的那一行**就会变高。
+       算式：`总高 = 文字总高 − 单行高 + max(单行高, 公式高)`。
+    """
+    base = text_height(font_size, 1)
+    lines = lines_for(text, box_w, font_size, level)
+    need = text_height(font_size, lines)
+    mh = 0.0
+    for is_math, payload in split_math(text):
+        if is_math:
+            mh = max(mh, math_height_pt(payload, font_size))
+    return float(need - base + max(base, mh))
 
 
 def chars_per_line(box_w, font_size, level=0):
@@ -418,6 +645,11 @@ def _paras_need(paras, box_w):
 
     🔴 渲染器与判据**必须用同一个函数**算高度 —— 两处各算一套，
        就会出现「判据说没溢出、画出来溢出了」那种没有价值的判据。
+
+    🔴 高度按**公式感知**的口径算（`paragraph_height`）：
+       分式、根式比普通文字高得多，只按「行数 × 行高」算 ⇒ 表格单元格里
+       的公式会被 PowerPoint 裁掉（实测：`√(k/m)` 的分母被切没了），
+       而判据还说「装得下」。
     """
     need = 0.0
     for p in paras or []:
@@ -425,8 +657,7 @@ def _paras_need(paras, box_w):
         text = p.get("text", "")
         if p.get("runs"):
             text = "".join(str(r.get("text", "")) for r in p["runs"])
-        lines = lines_for(text, box_w, sz, int(p.get("level", 0)))
-        need += text_height(sz, lines)
+        need += paragraph_height(text, box_w, sz, int(p.get("level", 0)))
         need += float(p.get("spc_before") or 0.0)
     return need
 
@@ -508,8 +739,9 @@ def _card_content_h(title, body_paras, inner_w):
     """一张卡片的内容高度（不含上下内边距与顶部色条）。"""
     need = 0.0
     if title:
-        lines = lines_for(title, inner_w, SIZES["card_title"])
-        need += text_height(SIZES["card_title"], lines) + TITLE_GAP
+        # 🔴 用 `paragraph_height`（**公式感知**），不是 `text_height` ——
+        #    卡片标题里放分式时，它比一行文字高得多（实测 2.10 em）。
+        need += paragraph_height(title, inner_w, SIZES["card_title"]) + TITLE_GAP
     if body_paras:
         need += _paras_need(body_paras, inner_w)
     return need
@@ -541,8 +773,9 @@ def _card_slots(name, x, y, w, h, accent, tint, deep, cols,
 
     title_h = 0.0
     if title:
-        title_h = text_height(SIZES["card_title"],
-                               lines_for(title, content_w, SIZES["card_title"]))
+        # 🔴 公式感知：标题里放了分式，标题框必须按**公式高度**算，
+        #    否则框只有一行文字那么高 ⇒ 公式越界 ⇒ 被下一块色块盖掉。
+        title_h = paragraph_height(title, content_w, SIZES["card_title"])
     body_pars = []
     body_h = 0.0
     if body_lines:
@@ -693,20 +926,31 @@ def _two_column_slots(bullets, pair):
     return out
 
 
-def _table_slots(slide):
-    """表格版式：深蓝表头 + 斑马纹行 + 首列粗体。
+def _table_geometry(tb):
+    """表格的几何：列宽、表头高、数据行高。**几何的单一出处**。
 
-    🔴 行高是**固定值**（不是按内容自适应）——自适应就等于没有行高，
-       单元格里字装不下时会被悄悄缩掉，溢出判据也就失效了。
+    🔴 数据行高为什么**不是固定值**：
+       单元格里的**真公式**（分式 / 根式）比文字高得多 ——
+       实测 12pt 下 `√(k/m)` 的墨迹高 39.5pt，而单元格的文字槽只有 20pt。
+       行高固定 ⇒ 公式被 PowerPoint **裁掉**（分母直接不见了），
+       同时 autofit 把同一段里的普通文字**悄悄缩小**。
+
+       所以行高改成：**下限 + 按内容撑高**。
+         · 纯文字表格 ⇒ 行高仍是 30pt（与从前**逐字节相同**）；
+         · 有公式的表格 ⇒ 行高统一取「所有单元格里最高的那个」，
+           表格才不会被切，且仍然是一张**等高行**的表（不是参差的）。
+
+    🔴 溢出判据没有因此作废：判据从「单元格里装不装得下」
+       换成「**整张表放不放得进正文区**」（见 `overflow`）。
+       表格放不下 ⇒ 报错，而不是让 PowerPoint 悄悄缩字号。
     """
-    tb = slide.get("table") or {}
     header = [str(h or "") for h in (tb.get("header") or [])]
     rows = tb.get("rows") or []
     ncols = len(header)
     for r in rows:
         ncols = max(ncols, len(r or []))
     if ncols < 1:
-        return []
+        return None
     if ncols == 1:
         ratios = [1.0]
     elif ncols == 2:
@@ -720,22 +964,70 @@ def _table_slots(slide):
         xs.append((acc, CONTENT_W * r))
         acc += CONTENT_W * r
 
+    def cell_need(text, inner_w, sz):
+        return paragraph_height(text, inner_w, sz, 0)
+
+    # 表头行高
+    head_need = 0.0
+    for i, htxt in enumerate(header):
+        cx, cw = xs[i]
+        head_need = max(head_need, cell_need(htxt, cw - 2 * TABLE_HEAD_PAD,
+                                              SIZES["body"]))
+    head_h = max(TABLE_HEAD_H, head_need + 2 * TABLE_HEAD_PAD)
+
+    # 数据行高（**所有行统一**）
+    row_need = 0.0
+    for r, row in enumerate(rows):
+        for i in range(ncols):
+            cx, cw = xs[i]
+            cell = ""
+            if i < len(row or []):
+                cell = str(row[i] or "")
+            row_need = max(row_need, cell_need(cell, cw - 2 * TABLE_CELL_PAD,
+                                                SIZES["body"]))
+    row_h = max(TABLE_ROW_H, row_need + 2 * TABLE_CELL_PAD)
+
+    return {"header": header, "rows": rows, "ncols": ncols, "xs": xs,
+            "head_h": head_h, "row_h": row_h,
+            "total_h": head_h + len(rows) * row_h}
+
+
+def _table_slots(slide):
+    """表格版式：深蓝表头 + 斑马纹行 + 首列粗体。
+
+    🔴 行高来自 `_table_geometry`（**几何的单一出处**）：
+       纯文字表格仍是 30pt；装了分式/根式的表格会等高撑开，
+       公式不再被裁。表格整体放不下正文区时，由 `overflow` 报出来。
+    """
+    tb = slide.get("table") or {}
+    g = _table_geometry(tb)
+    if not g:
+        return []
+    header = g["header"]
+    rows = g["rows"]
+    xs = g["xs"]
+    head_h = g["head_h"]
+    row_h = g["row_h"]
+
     out = []
     y = CANVAS["body_top"]
     for i, htxt in enumerate(header):
         cx, cw = xs[i]
         color = COLORS["table_head"] if i == 0 else COLORS["table_head2"]
-        out.append(_free_slot("Head%d" % i, "rect", cx, y, cw, TABLE_HEAD_H,
+        out.append(_free_slot("Head%d" % i, "rect", cx, y, cw, head_h,
                               color=color))
-        out.append(_free_slot("HeadText%d" % i, "text", cx + 6.0, y + 6.0,
-                              cw - 12.0, TABLE_HEAD_H - 12.0, sz=SIZES["body"],
+        out.append(_free_slot("HeadText%d" % i, "text", cx + TABLE_HEAD_PAD,
+                              y + TABLE_HEAD_PAD,
+                              cw - 2 * TABLE_HEAD_PAD,
+                              head_h - 2 * TABLE_HEAD_PAD,
+                              sz=SIZES["body"],
                               bold=True, color="on_accent", align="ctr",
                               paras=[{"text": htxt, "sz": SIZES["body"],
                                       "bold": True, "color": "on_accent",
                                       "align": "ctr", "bullet": False}]))
-    y += TABLE_HEAD_H
+    y += head_h
     for r, row in enumerate(rows):
-        for i in range(ncols):
+        for i in range(g["ncols"]):
             cx, cw = xs[i]
             if i == 0:
                 fill = COLORS["paper"]
@@ -750,17 +1042,17 @@ def _table_slots(slide):
             if i < len(row or []):
                 cell = str(row[i] or "")
             out.append(_free_slot("Cell%d_%d" % (r, i), "rect", cx, y, cw,
-                                  TABLE_ROW_H, color=fill))
+                                  row_h, color=fill))
             out.append(_free_slot("CellText%d_%d" % (r, i), "text",
                                   cx + TABLE_CELL_PAD, y + TABLE_CELL_PAD,
                                   cw - 2 * TABLE_CELL_PAD,
-                                  TABLE_ROW_H - 2 * TABLE_CELL_PAD,
+                                  row_h - 2 * TABLE_CELL_PAD,
                                   sz=SIZES["body"], bold=bold, color=txt_color,
                                   align="ctr",
                                   paras=[{"text": cell, "sz": SIZES["body"],
                                           "bold": bold, "color": txt_color,
                                           "align": "ctr", "bullet": False}]))
-        y += TABLE_ROW_H
+        y += row_h
     return out
 
 
@@ -936,6 +1228,18 @@ def overflow(slide):
                     break
             bad.append({"slot": slot.get("name", ""), "need": need, "have": have,
                         "over": need - have, "text": preview})
+    # 🔴 表格页的判据在**整张表**这一层：
+    #    单元格的行高是按内容撑出来的（`_table_geometry`），
+    #    所以「单元格装不下」永远不会发生；真正会出问题的是
+    #    **整张表比正文区还高** —— 那时必须报出来，
+    #    而不是让 PowerPoint 把字悄悄缩掉。
+    tb = slide.get("table")
+    if isinstance(tb, dict) and (tb.get("rows") or []):
+        g = _table_geometry(tb)
+        if g and g["total_h"] > BODY_H + 0.5:
+            bad.append({"slot": "Table", "need": g["total_h"], "have": BODY_H,
+                        "over": g["total_h"] - BODY_H,
+                        "text": "表格共 %d 行" % len(g["rows"])})
     return bad
 
 
@@ -990,14 +1294,47 @@ def selftest():
     if c is None or c[0][0] != "甲" or c[0][1] != ["说明"]:
         print("selftest: 带标签的要点没有拆成标题 + 正文")
         return 2
-    # ⑦ 表格：行高固定 ⇒ 单元格里字太长会被溢出判据报出来
-    #    （半角字符按 0.5 em 算，160 个 x ≈ 80 em ⇒ 在 409pt 的单元格里要 3 行）
-    tb = {"layout": "bullets", "title": "表",
-          "table": {"header": ["维度", "内容"],
-                    "rows": [["甲", "x" * 160]]},
-          "notes": "讲稿"}
-    if not overflow(tb):
-        print("selftest: 表格单元格装不下却没有被报出来")
+    # ⑦ 表格几何：**行高按内容自适应**，但判据落在「整张表放不放得下」
+    #    ⑦-1 纯文字表格的行高与从前完全一样（30pt）—— 不许被公式改动连累
+    plain = {"layout": "bullets", "title": "表",
+             "table": {"header": ["维度", "内容"], "rows": [["甲", "乙"]]},
+             "notes": "讲稿"}
+    g0 = _table_geometry(plain["table"])
+    if g0["row_h"] != TABLE_ROW_H or g0["head_h"] != TABLE_HEAD_H:
+        print("selftest: 纯文字表格的行高被改动了（%r / %r）"
+              % (g0["row_h"], g0["head_h"]))
+        return 2
+    # ⑦-2 有分式 / 根式的表格：行高被撑高，且**公式必须装得进单元格的槽**
+    #     （实测：12pt 的 √(k/m) 墨迹高 39.5pt，槽高 20pt ⇒ 分母被裁掉）
+    hard = {"layout": "bullets", "title": "表",
+            "table": {"header": ["参数", "含义"],
+                      "rows": [[r"$\omega_{0} = \sqrt{\frac{k}{m}}$", "固有角频率"],
+                               [r"$\gamma = \frac{c}{2m}$", "衰减速率"]]},
+            "notes": "讲稿"}
+    g1 = _table_geometry(hard["table"])
+    if g1["row_h"] <= TABLE_ROW_H:
+        print("selftest: 含公式的表格行高没有被撑开（%r）" % g1["row_h"])
+        return 2
+    slot_h = g1["row_h"] - 2 * TABLE_CELL_PAD
+    for row in hard["table"]["rows"]:
+        need = paragraph_height(row[0], g1["xs"][0][1] - 2 * TABLE_CELL_PAD,
+                                SIZES["body"], 0)
+        if need > slot_h + 0.5:
+            print("selftest: 单元格里装不下公式（需要 %r，槽高 %r）"
+                  % (need, slot_h))
+            return 2
+    # ⑦-3 行数多到整张表超过正文区 ⇒ 必须报出来（而不是让 PowerPoint 缩字号）
+    tall = {"layout": "bullets", "title": "表",
+            "table": {"header": ["参数", "含义"],
+                      "rows": [[r"$\omega_{0} = \sqrt{\frac{k}{m}}$", "固有角频率"]] * 9},
+            "notes": "讲稿"}
+    ovs = overflow(tall)
+    if not any(o["slot"] == "Table" for o in ovs):
+        print("selftest: 表格比正文区高却没有被报出来")
+        return 2
+    # ⑦-4 含公式的表格**不该**被误报（表格放得下就是放得下）
+    if [o for o in overflow(hard) if o["slot"] == "Table"]:
+        print("selftest: 放得下的表格被误报为溢出")
         return 2
     print("selftest: 全部通过")
     return 0

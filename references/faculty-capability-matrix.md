@@ -2,7 +2,7 @@
 
 > 这是**巡检基线**。每季度巡检后更新。
 > 「覆盖状态」记录某能力格是否已有技能接住；`—` 表示缺口，是巡检时优先补的候选。
-> 维护人：junior-faculty-agent ｜ 最近更新：2026-10-26（第 7 版：**课件线拆分** —— `teaching-slide-designer` 拆成**设计**（写什么：认知任务 / 断言式标题 / 讲稿分离 / 阈值）与**生成**（怎么生成：PPTX 生成器 / 版式几何 / 溢出判据 / 实开验收）两个技能，后者名为 `teaching-slide-builder`，三支脚本随之迁入其 `scripts/`；两技能同挂 B7 与 E7。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
+> 维护人：junior-faculty-agent ｜ 最近更新：2026-10-26（第 8 版：**公式校正线回仓** —— 新增原创技能 `formula-typesetting`（伪公式检测 / LaTeX 规范化 / OMML 注入 / 验收闸），同挂 B7（教学侧：课件、讲义、教案的公式）与 E4（科研侧：论文公式）。它不是"再加一个能力"，而是**给所有生成物接上一道必经工序**：课件 / 讲义 / 教案 / 试卷 / 论文的公式统一在**源层**规范化一次，各载体只负责渲染自己那一份（Markdown 走 typst、PPTX 注入 OMML）。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 7 版：**课件线拆分** —— `teaching-slide-designer` 拆成**设计**（写什么：认知任务 / 断言式标题 / 讲稿分离 / 阈值）与**生成**（怎么生成：PPTX 生成器 / 版式几何 / 溢出判据 / 实开验收）两个技能，后者名为 `teaching-slide-builder`，三支脚本随之迁入其 `scripts/`；两技能同挂 B7 与 E7。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
 
 ## 一、能力格清单
 
@@ -48,9 +48,9 @@
 >
 > | 档位 | 能力域 | 技能数 |
 > |---|---|---|
-> | `teaching` | A 教学准备 / B 教学实施 / C 考核评价 / D 学生支持 / F 教研发展 | 62 |
-> | `research` | E 科研全流程 | 24 |
-> | `full` | 全部 + 仓库机制类 | 86 |
+> | `teaching` | A 教学准备 / B 教学实施 / C 考核评价 / D 学生支持 / F 教研发展 | 63 |
+> | `research` | E 科研全流程 | 25 |
+> | `full` | 全部 + 仓库机制类 | 88 |
 >
 > 恒等式：`teaching ∪ research == full − {skill-scan}`
 > （`skill-scan` 是**仓库自身的季度巡检机制**，不是师生素能力，因此只在完整包里）。
@@ -90,7 +90,7 @@
 | B4 课堂提问与讨论组织 | 产出提问序列、讨论协议、苏格拉底式追问 | ●hinge-question-designer, ●socratic-questioning-sequence-generator, ●discussion-protocol-selector, ●dialogic-teaching-move-generator | 已覆盖 |
 | B5 理解检测 | 为每个教学环节配理解检查技术 | ●checking-for-understanding-protocol-designer, ●formative-assessment-technique-selector, ●feynman-diagnostic-cycle | 已覆盖 |
 | B6 认知负荷与记忆设计 | 能做认知负荷分析、间隔与提取练习安排 | ●cognitive-load-analyser, ●dual-coding-designer, ●retrieval-practice-generator, ●spaced-practice-scheduler | 已覆盖 |
-| B7 板书与可视化 | 产出板书结构/示意图/教学幻灯片 | ●markdown-mermaid-writing, ●scientific-schematics, ●teaching-slide-designer, ●teaching-slide-builder | 部分覆盖（示意图与幻灯片已覆盖；板书结构无已装技能） |
+| B7 板书与可视化 | 产出板书结构/示意图/教学幻灯片 | ●markdown-mermaid-writing, ●scientific-schematics, ●teaching-slide-designer, ●teaching-slide-builder, ●formula-typesetting | 部分覆盖（示意图与幻灯片已覆盖；板书结构无已装技能） |
 
 ### C. 考核与评价
 
@@ -122,7 +122,7 @@
 | E1 选题与假设生成 | 产出有证据边界的研究问题与竞争性解释 | ●hypothesis-generation, ●scientific-brainstorming, ●scientific-critical-thinking | 已覆盖 |
 | E2 文献调研与综述 | 产出系统/叙述性综述 | ●literature-review, ●research-lookup, ●paper-lookup, ●citation-management, ●citation-audit | 已覆盖 |
 | E3 实验设计与统计 | 产出实验设计、功效分析、统计方法选择 | ●experimental-design, ●statistical-analysis, ◐empirical-lint（功效/样本量/MDE）, ●uncertainty-and-units | 已覆盖 |
-| E4 论文写作与投稿 | 产出 IMRaD 稿件与投稿件 | ●scientific-writing, ●venue-templates, ●submission-readiness | 已覆盖 |
+| E4 论文写作与投稿 | 产出 IMRaD 稿件与投稿件 | ●scientific-writing, ●venue-templates, ●submission-readiness, ●formula-typesetting | 已覆盖 |
 | E5 同行评议与回应 | 产出审稿意见与逐点回复 | ●peer-review, ●scholar-evaluation, ●assertive-writing, ◐nature-response | 已覆盖 |
 | E6 图表与可视化 | 产出投稿级图表 | ●scientific-visualization, ◐nature-figure | 已覆盖 |
 | E7 学术汇报 | 产出会议 slides / 海报 | ●latex-posters, ●scientific-slides, ●paper-to-talk-designer, ●teaching-slide-designer, ●teaching-slide-builder | 已覆盖 |

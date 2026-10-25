@@ -675,6 +675,20 @@ def main(argv=None):
             sys.stderr.write("[lint] 审校失败：%s\n" % e)
             return 2
 
+    # ── ⑤′ 公式规范化：每一件生成物的公式都必须过一遍 ─────────────
+    #    大纲派生的三件已经在 outline.py 里规范过了（规范化是幂等的，
+    #    再过一次是空转）；试卷、学生版讲义、审校意见这些**不走派生**的
+    #    规格必须在这里补上 —— 否则伪公式会绕过规范化漏到交付物里。
+    #    （本轮实测：试卷的答案与评分细则里有 4 处伪公式，正是这条漏掉的。）
+    for task in sorted(specs):
+        if task == "lint":
+            continue
+        try:
+            specs[task] = outline_mod.normalize_spec(specs[task], task)
+        except outline_mod.OutlineError as e:
+            sys.stderr.write("[%s] 公式规范化中止：%s\n" % (task, e))
+            return 2
+
     # 落盘 spec：它们既是中间产物，也是"模型写了什么"的审计凭据
     for task in specs:
         write_text(os.path.join(out_dir, task + ".spec.json"),
@@ -726,6 +740,17 @@ def main(argv=None):
         p = os.path.join(out_dir, "讲义-学生版.md")
         write_text(p, render_handout_extra(specs["handout_extra"]))
         outputs.append(p)
+
+    # ── 公式验收闸：所有生成物的公式都必须已经过规范化 ──────────────
+    #    规范化在**派生层**做（demo/outline.py 的 normalize_spec），
+    #    这里检查它**真的做到了** —— 判据不重写一份，用技能里的 formula_gate。
+    formula_findings = []
+    for key in ("lesson_plan", "exam_paper", "slides", "handout"):
+        if key in specs:
+            formula_findings.extend(selfcheck.check_formula(specs[key], key))
+    if formula_findings:
+        results["formula"] = {"findings": formula_findings,
+                              "summary": selfcheck.summarize(formula_findings)}
 
     if "lint" in specs:
         p = os.path.join(out_dir, "审校意见.md")
