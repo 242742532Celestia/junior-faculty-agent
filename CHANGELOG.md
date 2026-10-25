@@ -9,6 +9,41 @@
 
 ---
 
+## [Unreleased]
+
+### 一、课件线拆成两个技能（设计 / 生成）
+
+- `teaching-slide-designer` 收敛为**课件设计**：一页一个认知任务、断言式标题、
+  要点切分、讲稿分离、来源标注，并把教学阈值写成**机器可读的唯一出处**。
+- 新增 `teaching-slide-builder`：**课件生成** —— 纯标准库 PPTX 生成器
+  `build_pptx.py`、版式几何与文字高度表 `slide_layouts.py`、
+  教学规范审查器 `slide_spec_lint.py`，三支脚本随之迁入其 `scripts/`。
+- 新增守卫「**设计文档阈值 ↔ 审查器 THRESHOLDS 逐项相等**」+ 变异测试：
+  阈值写在文档与代码两处，改一处忘另一处会被立刻抓住。
+
+### 二、两个让 PowerPoint 直接拒开的 OOXML 契约 bug（已修）
+
+- **字号单位**：`sz` 是百分之一磅（schema 下限 100），不是磅。写 `sz="44"`
+  ⇒ PowerPoint 打开 `HRESULT E_FAIL`。生成器内部一律用磅，写 XML 时 ×100。
+- **主题 content type**：必须是 `...officedocument.theme+xml`（**无 `.drawingml`**）。
+  写错 ⇒ 母版主题断链 ⇒ 拒开；且**只换部件内容修不好**，必须连
+  `[Content_Types].xml` 的声明一起对。
+- 顺带修掉：`spcBef` 被当成 `a:rPr` 的属性（应是 `a:pPr` 的子元素且须排在
+  `buClr`/`buFont`/`buChar` 之前）、段间距参数没传下去、
+  核心属性关系类型误用 officeDocument 命名空间、`docProps/app.xml` 元素顺序违规。
+- 新增三道守卫（字号单位 / `spcBef` 位置 / content type 机械推导比对）+ 2 个变异测试。
+
+### 三、版式系统按参考课件重做
+
+- 画布 960×540 ⇒ **720×405 pt**（10×5.625 in），色板与字号实测自参考课件
+  （`design_tokens.md`），不再是凭印象配的。
+- 多色强调体系（8 套轮转）、卡片高度随内容自适应（以正文区高封顶）、
+  直角色块与角标图元。
+- 判据 L15 的期望样例按新几何重新标定；`demo/selftest.py` 里那条
+  「L15 不是 L03 的重复」的变异用例同步换样例。
+
+---
+
 ## [1.0.0] - 2026-10-24
 
 首个公开版。**可商用**：本仓库原创内容 MIT；第三方内容各自保留原许可，

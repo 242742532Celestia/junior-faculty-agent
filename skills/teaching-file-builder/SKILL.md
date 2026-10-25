@@ -205,8 +205,9 @@ ubd
 ## 文件类型 3：课件大纲 / 幻灯片脚本
 
 课件**大纲**与课件**文件**是两件事：
-大纲是给你做 PPT 用的脚本，PPT 文件用 `teaching-slide-designer` 自带的
-纯标准库生成器产出（**不依赖**运行时内置的 `pptx` 技能 —— 那个不随本仓库分发）。
+大纲是给你做 PPT 用的脚本，PPT 文件用 `teaching-slide-builder` 自带的
+纯标准库生成器产出（**不依赖**运行时内置的 `pptx` 技能 —— 那个不随本仓库分发）；
+每页写什么的设计口径见 `teaching-slide-designer`。
 
 **必备结构**
 ```
@@ -316,5 +317,5 @@ ubd
 - 命题 → `exam-question-bank`
 - 提问与讨论 → `socratic-questioning-sequence-generator`、`hinge-question-designer`
 - 认知负荷 → `cognitive-load-analyser`
-- 格式生成 → 全局 `docx` / `pdf` 技能；幻灯片用 `teaching-slide-designer` 的自研生成器
+- 格式生成 → 全局 `docx` / `pdf` 技能；幻灯片用 `teaching-slide-builder` 的自研生成器
 - 高校语境映射 → `references/he-context-adapter.md`

@@ -117,33 +117,41 @@ GROUNDING_PLAN = {
         ]),
     },
     "slides": {
-        "docs": ["skills/teaching-slide-designer/SKILL.md"],
+        "docs": ["skills/teaching-slide-designer/SKILL.md",
+                 "skills/teaching-slide-builder/SKILL.md"],
         "build": lambda d: "\n\n".join([
-            "【幻灯片方法论与自检口径】\n"
+            "【幻灯片设计口径（写什么）】\n"
             + excerpt(d["skills/teaching-slide-designer/SKILL.md"],
-                      "## 这个技能解决什么", "## 交叉技能")
-            if "## 这个技能解决什么" in d["skills/teaching-slide-designer/SKILL.md"]
-            else excerpt(d["skills/teaching-slide-designer/SKILL.md"], "## 什么时候用"),
+                      "## 这个技能解决什么", "## 交叉技能"),
+            "【规格 JSON 字段契约与版式（怎么写进文件）】\n"
+            + excerpt(d["skills/teaching-slide-builder/SKILL.md"],
+                      "## 输入", "## 执行步骤"),
         ]),
     },
     # 单页重生成：只为一页调一次模型（增量重生成的省钱点）
     "page": {
-        "docs": ["skills/teaching-slide-designer/SKILL.md"],
+        "docs": ["skills/teaching-slide-designer/SKILL.md",
+                 "skills/teaching-slide-builder/SKILL.md"],
         "build": lambda d: "\n\n".join([
-            "【幻灯片方法论与自检口径】\n"
+            "【幻灯片设计口径（写什么）】\n"
             + excerpt(d["skills/teaching-slide-designer/SKILL.md"],
-                      "## 这个技能解决什么", "## 交叉技能")
-            if "## 这个技能解决什么" in d["skills/teaching-slide-designer/SKILL.md"]
-            else excerpt(d["skills/teaching-slide-designer/SKILL.md"], "## 什么时候用"),
+                      "## 这个技能解决什么", "## 交叉技能"),
+            "【规格 JSON 字段契约与版式（怎么写进文件）】\n"
+            + excerpt(d["skills/teaching-slide-builder/SKILL.md"],
+                      "## 输入", "## 执行步骤"),
         ]),
     },
     # 判读/审校类：改稿前先让它挑毛病
     "lint": {
-        "docs": ["skills/teaching-slide-designer/SKILL.md"],
+        "docs": ["skills/teaching-slide-designer/SKILL.md",
+                 "skills/teaching-slide-builder/SKILL.md"],
         "build": lambda d: "\n\n".join([
-            "【幻灯片方法论与自检口径】\n"
+            "【幻灯片设计口径（改稿依据）】\n"
             + excerpt(d["skills/teaching-slide-designer/SKILL.md"],
                       "## 易错点", "## 交叉技能"),
+            "【机械判据表（逐项核对）】\n"
+            + excerpt(d["skills/teaching-slide-builder/SKILL.md"],
+                      "**表 · 检查项与处置原则**", "### 第 5 步"),
         ]),
     },
     # 学生阅读版讲义（自学者可独立使用）—— 与「逐页讲稿讲义」是**两件不同的东西**

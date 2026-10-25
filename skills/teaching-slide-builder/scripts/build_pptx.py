@@ -89,12 +89,43 @@ C_PAPER = L.COLORS["paper"]
 
 COLOR_MAP = {"ink": C_INK, "muted": C_MUTED, "accent": C_ACCENT}
 
+
+def resolve_color(c, default=None):
+    """颜色可以是**令牌名**（"ink" / "body" / "muted"）也可以是**字面色值**（"1E3A8A"）。
+
+    🔴 两种写法都必须支持：版式表用令牌名（语义），多色强调体系用字面色值（轮转）。
+       早先只有令牌名，于是每页都是同一个强调色 —— 参考课件那种「每张卡一个颜色」
+       的做法就做不出来。
+    """
+    if c is None:
+        return default if default is not None else C_INK
+    s = str(c).strip()
+    if not s:
+        return default if default is not None else C_INK
+    if s in L.COLORS:
+        return L.COLORS[s]
+    if s in COLOR_MAP:
+        return COLOR_MAP[s]
+    if len(s) == 6 and all(ch in "0123456789ABCDEFabcdef" for ch in s):
+        return s.upper()
+    return default if default is not None else C_INK
+
 LAYOUTS = L.LAYOUTS
 
 # 关系的固定类型串
 RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+# 🔴 **包级**关系（core-properties）用的是 package 命名空间，不是 officeDocument。
+#    曾经把它也拼成 officeDocument ⇒ 核心属性部件在关系图里"类型不对"，
+#    严格校验器会判非法（PowerPoint 恰好容忍，但不该依赖它的宽容）。
+RT_PKG = "http://schemas.openxmlformats.org/package/2006/relationships"
 CT = "application/vnd.openxmlformats-officedocument.presentationml"
-CT_DRAWING = "application/vnd.openxmlformats-officedocument.drawingml"
+# 🔴 主题部件的 content type 是 `application/vnd.openxmlformats-officedocument.theme+xml`
+#    —— **没有 `.drawingml` 这一段**。
+#    曾经写成 `...officedocument.drawingml.theme+xml` ⇒ PowerPoint 按 content type
+#    装载主题时认不出来 ⇒ 母版的主题断链 ⇒ **打开时直接拒绝（HRESULT E_FAIL）**。
+#    注意：content type 写错时，**只换主题部件的内容是修不好的**，
+#    必须连 [Content_Types].xml 里的声明一起对。
+CT_THEME = "application/vnd.openxmlformats-officedocument.theme+xml"
 
 
 class SpecError(Exception):
@@ -136,8 +167,18 @@ def write_text(p, text):
 
 
 def rel(rid, rtype, target, mode=None):
+    """一条关系。
+
+    `rtype` 不含命名空间时按 **officeDocument** 命名空间拼；
+    以 `pkg:` 开头的是**包级**关系（core-properties），用 package 命名空间。
+    """
     extra = ' TargetMode="External"' if mode == "External" else ""
-    return '<Relationship Id="%s" Type="%s/%s" Target="%s"%s/>' % (rid, RT, rtype, target, extra)
+    if rtype.startswith("pkg:"):
+        base = RT_PKG
+        rtype = rtype[4:]
+    else:
+        base = RT
+    return '<Relationship Id="%s" Type="%s/%s" Target="%s"%s/>' % (rid, base, rtype, target, extra)
 
 
 # ---------------------------------------------------------------- 规格读取
@@ -179,30 +220,45 @@ def load_spec(path):
 
 # ---------------------------------------------------------------- 形状构造
 
-def run_props(sz, bold=False, color=C_INK, spc_before=0):
-    """一段文字的 <a:rPr> 属性串。"""
-    return ('<a:rPr lang="zh-CN" altLang="en-US" sz="%d" b="%d" dirty="0"%s>'
+def run_props(sz, bold=False, color=C_INK):
+    """一段文字的 <a:rPr> 属性串。
+
+    🔴 `sz` 的单位是**百分之一磅**（OOXML `ST_TextFontSize`，schema 下限 100）。
+       本模块内部一律用**磅**（与 `slide_layouts.SIZES` 一致），写进 XML 时 ×100。
+       曾经直接写磅值（44 ⇒ sz="44"）⇒ 违反 schema 下限 ⇒
+       **PowerPoint 打开时直接拒绝（HRESULT E_FAIL），不是提示修复**。
+       见 docs 参考：本仓库的 PPTX 产物曾长期打不开，根因就是这一处单位。
+    """
+    return ('<a:rPr lang="zh-CN" altLang="en-US" sz="%d" b="%d" dirty="0">'
             '<a:solidFill><a:srgbClr val="%s"/></a:solidFill>'
             '<a:latin typeface="Arial"/><a:ea typeface="Microsoft YaHei"/>'
             '<a:cs typeface="Arial"/></a:rPr>'
-            % (sz, 1 if bold else 0,
-               (' spcBef><a:spcPts val="%d"/></a:spcBef>' % spc_before) if spc_before else "",
-               color))
+            % (int(round(sz * 100)), 1 if bold else 0, color))
 
 
 def paragraph(text, sz=SZ_BODY, bold=False, color=C_INK, algn="l",
-              level=0, bullet=True, spc_before=0, indent=0):
-    """构造一个 <a:p>。level > 0 时用缩进+短横线项目符号。"""
+              level=0, bullet=True, spc_before=0, indent=0, bullet_color=None):
+    """构造一个 <a:p>。level > 0 时用缩进+短横线项目符号。
+
+    `spc_before` 的单位是**百分之一磅**（OOXML `a:spcPts` 的单位）。
+    🔴 它是 `<a:pPr>` 的**子元素**，且按 schema 顺序必须排在
+       `buClr` / `buFont` / `buChar` **之前**。
+       曾经把它当成 `<a:rPr>` 的**属性**拼进去（` spcBef><a:spcPts .../>`），
+       那个位置既不是合法属性也不是合法子元素 ⇒ 一旦命中就是 schema 违规。
+    """
     ppr = '<a:pPr algn="%s"' % algn
     if level:
         ppr += ' marL="%d" indent="%d"' % (pt(28 * level), -pt(14))
     else:
         ppr += ' marL="%d" indent="%d"' % (pt(24), -pt(24))
     ppr += ">"
+    if spc_before:
+        ppr += '<a:spcBef><a:spcPts val="%d"/></a:spcBef>' % int(round(spc_before))
     if bullet:
         ch = "•" if level == 0 else "–"
         ppr += ('<a:buClr><a:srgbClr val="%s"/></a:buClr><a:buFont typeface="Arial"/>'
-                '<a:buChar char="%s"/>' % (C_ACCENT, esc(ch)))
+                '<a:buChar char="%s"/>'
+                % (resolve_color(bullet_color, color), esc(ch)))
     else:
         ppr += "<a:buNone/>"
     ppr += "</a:pPr>"
@@ -250,7 +306,23 @@ def rule(shape_id, x, y, cx, color=C_RULE, h=12700):
             '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
             '<a:solidFill><a:srgbClr val="%s"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr>'
             '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="zh-CN"/></a:p></p:txBody></p:sp>'
-            % (shape_id, shape_id, x, y, cx, h, color))
+            % (shape_id, shape_id, x, y, cx, h, resolve_color(color, C_RULE)))
+
+
+def rect(shape_id, name, x, y, cx, cy, color):
+    """一个实心色块（卡片底 / 强调条 / 角标底）。
+
+    🔴 几何用**点**（pt），写 XML 时换算成 EMU；与本模块其它图元同一坐标系。
+       参考课件的卡片与角标都是**直角矩形**（不是圆角），
+       这里保持一致 —— 学界课件的视觉语言偏方正。
+    """
+    return ('<p:sp><p:nvSpPr><p:cNvPr id="%d" name="%s"/>'
+            '<p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+            '<p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm>'
+            '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+            '<a:solidFill><a:srgbClr val="%s"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr>'
+            '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="zh-CN"/></a:p></p:txBody></p:sp>'
+            % (shape_id, esc(name), x, y, cx, cy, resolve_color(color)))
 
 
 # ---------------------------------------------------------------- 幻灯片排版
@@ -263,11 +335,13 @@ def _para(p):
     """
     return paragraph(p.get("text", ""), sz=p.get("sz", SZ_BODY),
                      bold=p.get("bold", False),
-                     color=COLOR_MAP.get(p.get("color"), C_INK),
+                     color=resolve_color(p.get("color"), C_INK),
                      algn=p.get("align", "l"),
                      level=int(p.get("level", 0)),
                      bullet=p.get("bullet", True),
-                     spc_before=int(round(float(p.get("spc_before") or 0) * 100)))
+                     spc_before=int(round(float(p.get("spc_before") or 0) * 100)),
+                     bullet_color=resolve_color(p.get("bullet_color"),
+                                                p.get("color")))
 
 
 def render_slide(sld, idx, media, image_rels, base_dir):
@@ -291,7 +365,14 @@ def render_slide(sld, idx, media, image_rels, base_dir):
                                   wrap=slot.get("wrap", True)))
             sid += 1
         elif kind == "rule":
-            shapes.append(rule(sid, pt(slot["x"]), pt(slot["y"]), pt(slot["w"])))
+            shapes.append(rule(sid, pt(slot["x"]), pt(slot["y"]), pt(slot["w"]),
+                               color=slot.get("color", C_RULE),
+                               h=pt(slot.get("h", 1.0))))
+            sid += 1
+        elif kind == "rect":
+            shapes.append(rect(sid, slot["name"], pt(slot["x"]), pt(slot["y"]),
+                               pt(slot["w"]), pt(slot["h"]),
+                               slot.get("color", C_PAPER)))
             sid += 1
         elif kind == "picture":
             rid = _register_image(image_rels, slot.get("src", ""), media, base_dir)
@@ -362,8 +443,8 @@ def content_types(n_slides, n_notes, images):
         '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="%s.slideMaster+xml"/>' % CT,
         '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="%s.slideLayout+xml"/>' % CT,
         '<Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="%s.notesMaster+xml"/>' % CT,
-        '<Override PartName="/ppt/theme/theme1.xml" ContentType="%s.theme+xml"/>' % CT_DRAWING,
-        '<Override PartName="/ppt/theme/theme2.xml" ContentType="%s.theme+xml"/>' % CT_DRAWING,
+        '<Override PartName="/ppt/theme/theme1.xml" ContentType="%s"/>' % CT_THEME,
+        '<Override PartName="/ppt/theme/theme2.xml" ContentType="%s"/>' % CT_THEME,
         '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>',
         '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>',
     ]
@@ -389,7 +470,7 @@ ROOT_RELS = (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
     + rel("rId1", "officeDocument", "ppt/presentation.xml") +
-    rel("rId2", "metadata/core-properties", "docProps/core.xml",
+    rel("rId2", "pkg:metadata/core-properties", "docProps/core.xml",
         ) +
     rel("rId3", "extended-properties", "docProps/app.xml") +
     '</Relationships>')
@@ -461,7 +542,7 @@ NOTES_MASTER = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 APP_XML = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-<Application>junior-faculty-agent build_pptx.py</Application><Slides>%d</Slides><Company></Company>
+<Template></Template><Company></Company><Slides>%d</Slides><PresentationFormat>On-screen Show (16:9)</PresentationFormat><Application>junior-faculty-agent build_pptx.py</Application><AppVersion>16.0000</AppVersion>
 </Properties>'''
 
 
@@ -749,6 +830,82 @@ def check_pptx(path):
                     break
             if owner is None:
                 problems.append("notesSlide%d.xml 没有被任何页面的 rels 引用（备注不会显示）" % i)
+        # 🔴 字号单位检查：**OOXML 的 `sz` 是百分之一磅，schema 下限 100**。
+        #    曾经把磅值直接写进去（sz="44"），PowerPoint 打开时直接 E_FAIL ——
+        #    而当时的关系闭合自检全绿 ⇒ 靠"关系闭合"抓不到这类错。
+        #    这条检查把"单位"变成机械判据：所有 sz 必须是 100 的整数倍且 ≥ 100。
+        import re as _re2
+        for part in sorted(n for n in names
+                           if n.startswith("ppt/slides/slide") or n.startswith("ppt/notesSlides/notesSlide")):
+            if not part.endswith(".xml"):
+                continue
+            blob = z.read(part).decode("utf-8", "replace")
+            for m in _re2.finditer(r'sz="(\d+)"', blob):
+                v = int(m.group(1))
+                if v < 100:
+                    problems.append("%s 的字号 sz=%d 小于 schema 下限 100"
+                                    "（OOXML 用百分之一磅，本模块内部用磅，×100 才对）"
+                                    % (part, v))
+                elif v % 100 != 0:
+                    problems.append("%s 的字号 sz=%d 不是 100 的整数倍（应为整磅）"
+                                    % (part, v))
+            # spcBef 只能是 a:pPr 的子元素，不能出现在 a:rPr 的属性位置
+            for m in _re2.finditer(r'<a:rPr[^>]*\sspcBef', blob):
+                problems.append("%s 把 spcBef 写进了 a:rPr 的属性位置"
+                                "（它只能是 a:pPr 的子元素）" % part)
+
+        # 🔴 content type 检查：按部件路径**机械推导**应有的 content type，
+        #    再与 [Content_Types].xml 的实际声明比对。
+        #    写错的代价是致命的：PowerPoint 按 content type 装载部件，认不出来就
+        #    **直接拒开**（实测主题写成 `...officedocument.drawingml.theme+xml`
+        #    ⇒ HRESULT E_FAIL）。而这类错**只换部件内容是修不好的**，
+        #    必须连声明一起对 —— 所以判据必须落在"声明"上。
+        def expected_ct(part):
+            p = part.lstrip("/")
+            if p == "ppt/presentation.xml":
+                return CT + ".presentation.main+xml"
+            if p.startswith("ppt/slideMasters/"):
+                return CT + ".slideMaster+xml"
+            if p.startswith("ppt/slideLayouts/"):
+                return CT + ".slideLayout+xml"
+            if p.startswith("ppt/notesMasters/"):
+                return CT + ".notesMaster+xml"
+            if p.startswith("ppt/slides/"):
+                return CT + ".slide+xml"
+            if p.startswith("ppt/notesSlides/"):
+                return CT + ".notesSlide+xml"
+            if p.startswith("ppt/theme/"):
+                return CT_THEME
+            if p.startswith("ppt/presProps"):
+                return CT + ".presProps+xml"
+            if p.startswith("ppt/viewProps"):
+                return CT + ".viewProps+xml"
+            if p.startswith("ppt/tableStyles"):
+                return CT + ".tableStyles+xml"
+            if p == "docProps/core.xml":
+                return "application/vnd.openxmlformats-package.core-properties+xml"
+            if p == "docProps/app.xml":
+                return "application/vnd.openxmlformats-officedocument.extended-properties+xml"
+            return None
+
+        if "[Content_Types].xml" in names:
+            ct_root = ET.fromstring(z.read("[Content_Types].xml"))
+            declared_ct = {}
+            for e in ct_root:
+                pn = e.get("PartName")
+                if pn:
+                    declared_ct[pn] = e.get("ContentType")
+            for pn, actual in sorted(declared_ct.items()):
+                exp = expected_ct(pn)
+                if exp is None:
+                    continue
+                if actual != exp:
+                    problems.append("content type 声明不对：%s 声明为 %s，应为 %s"
+                                    % (pn, actual, exp))
+            for pn in sorted(declared_ct):
+                if pn.lstrip("/") not in names:
+                    problems.append("content type 声明了不存在的部件 %s" % pn)
+
     return problems
 
 
@@ -857,6 +1014,53 @@ def _selftest_in(tmp):
     else:
         print("selftest: 非法版式未被拒绝", file=sys.stderr)
         return 2
+
+    # 🔴 变异测试：content type 写坏 ⇒ 守卫必须报红。
+    #    （只跑绿不算数——必须证明它会红。历史上主题的 content type 写成
+    #     `...officedocument.drawingml.theme+xml` 就是这样静默溜过去的。）
+    import zipfile as _zf
+    mutant = os.path.join(tmp, "mutant.pptx")
+    with _zf.ZipFile(op) as zin, _zf.ZipFile(mutant, "w", _zf.ZIP_DEFLATED) as zout:
+        for n in zin.namelist():
+            data = zin.read(n)
+            if n == "[Content_Types].xml":
+                data = data.replace(
+                    b"application/vnd.openxmlformats-officedocument.theme+xml",
+                    b"application/vnd.openxmlformats-officedocument.drawingml.theme+xml")
+            zout.writestr(n, data)
+    m_problems = check_pptx(mutant)
+    if not any("content type" in p for p in m_problems):
+        print("selftest: 主题 content type 被改坏后守卫没有报红", file=sys.stderr)
+        for p in m_problems:
+            print("  - %s" % p, file=sys.stderr)
+        return 2
+
+    # 变异测试 2：字号单位写坏（sz 少乘 100）⇒ 守卫必须报红。
+    #    🔴 变异**不能写死某个字号**（版式一改字号，变异就命不中 ⇒ 守卫"没红"，
+    #       看起来像守卫失灵，其实是变异失效）。这里按正则抓**任意** sz 属性，
+    #       把它砍掉两位数字（1200 → 12）⇒ 必然违反 schema 下限 100。
+    import re as _re3
+    mutant2 = os.path.join(tmp, "mutant2.pptx")
+    hit2 = False
+    with _zf.ZipFile(op) as zin, _zf.ZipFile(mutant2, "w", _zf.ZIP_DEFLATED) as zout:
+        for n in zin.namelist():
+            data = zin.read(n)
+            if not hit2 and n.startswith("ppt/slides/slide") and n.endswith(".xml"):
+                def _shrink(m):
+                    return b'sz="' + m.group(1)[:-2] + b'"'
+                new, cnt = _re3.subn(rb'sz="(\d{4})"', _shrink, data)
+                if cnt:
+                    hit2 = True
+                    data = new
+            zout.writestr(n, data)
+    if not hit2:
+        print("selftest: 变异没命中任何 sz 属性（守卫无从验证）", file=sys.stderr)
+        return 2
+    m2_problems = check_pptx(mutant2)
+    if not any("字号" in p for p in m2_problems):
+        print("selftest: 字号单位被改坏后守卫没有报红", file=sys.stderr)
+        return 2
+
     print("selftest: 全部通过")
     return 0
 

@@ -472,7 +472,7 @@ def mutate_rewrite_license_not_mit(dst):
 
 def mutate_pptx_temp_leak(dst):
     """把 PPTX 自检的临时目录清理去掉 —— 守卫必须抓到 TEMP 泄漏。"""
-    rel = os.path.join("skills", "teaching-slide-designer", "scripts",
+    rel = os.path.join("skills", "teaching-slide-builder", "scripts",
                        "build_pptx.py")
     t = _rd(dst, rel)
     old = ("    try:\n"
@@ -529,16 +529,43 @@ def mutate_slide_layouts_table(dst):
        写死字符串的锚点**一改就过期**，而过期的锚点会让这个变异
        抛"变异无效"、把整轮 47 项一起带崩。
     """
-    rel = os.path.join("skills", "teaching-slide-designer", "scripts",
+    rel = os.path.join("skills", "teaching-slide-builder", "scripts",
                        "slide_layouts.py")
     t = _rd(dst, rel)
-    m = re.search(r"^    24: \{1: (\d+), 2: (\d+)(.*)$", t, re.M)
-    if not m:
-        raise RuntimeError("变异无效：slide_layouts.py 里找不到 24pt 的高度表行")
-    one = int(m.group(1))
+    # 🔴 锚点用**当前最大的字号档**（23pt = 页标题）而不是写死 24pt：
+    #    改版后字号档换过一轮，写死 24 会让这个变异抛"变异无效"、
+    #    把整轮变异测试一起带崩。⇒ 正则抓「最大的那档」。
+    rows = re.findall(r"^    (\d+): \{1: (\d+), 2: (\d+)(.*)$", t, re.M)
+    if not rows:
+        raise RuntimeError("变异无效：slide_layouts.py 里找不到文字高度表行")
+    sz, one, two, tail = max(rows, key=lambda r: int(r[0]))
+    one, two = int(one), int(two)
     # 2 行的高度改到比 1 行还矮 ⇒ 同时破坏"逐格等于 ceil(字号×1.35×行数)"
-    new = "    24: {1: %d, 2: %d%s" % (one, one - 3, m.group(3))
-    _wr(dst, rel, t[:m.start()] + new + t[m.end():])
+    new = "    %s: {1: %d, 2: %d%s" % (sz, one, one - 3, tail)
+    _wr(dst, rel, t.replace("    %s: {1: %d, 2: %d%s" % (sz, one, two, tail),
+                             new, 1))
+
+
+def mutate_slide_threshold_doc_only(dst):
+    """只改设计文档里的阈值，不改审查器代码 —— 阈值单一出处守卫必须抓到。
+
+    🔴 这条针对的是最隐蔽的漂移：阈值写在**文档**（给教师看）与
+       **代码**（slide_spec_lint.py 的 THRESHOLDS，给工具用）两处，
+       改了一处忘了另一处 ⇒ 教师按文档说"6 条没问题"、工具却报 ERROR，
+       而两边都坚称自己是对的。**没有任何人会发现这件事。**
+    """
+    rel = os.path.join("skills", "teaching-slide-designer", "SKILL.md")
+    t = _rd(dst, rel)
+    m = re.search(r"```python\s*\nLINT_THRESHOLDS\s*=\s*\{.*?\n```", t, re.S)
+    if not m:
+        raise RuntimeError("变异无效：设计技能文档里找不到 LINT_THRESHOLDS 代码块")
+    blk = m.group(0)
+    m2 = re.search(r'"max_bullets":\s*(\d+)', blk)
+    if not m2:
+        raise RuntimeError("变异无效：阈值块里找不到 max_bullets")
+    v = int(m2.group(1))
+    new_blk = blk.replace('"max_bullets": %d' % v, '"max_bullets": %d' % (v + 1), 1)
+    _wr(dst, rel, t[:m.start()] + new_blk + t[m.end():])
 
 
 def mutate_demo_no_handout(dst):
@@ -757,6 +784,7 @@ MUTATIONS = [
     ("Demo 不再落盘大纲凭据", mutate_run_demo_no_outline_artifact,
      "离线 Demo 走大纲层"),
     ("文字高度表被改得不自洽", mutate_slide_layouts_table, "版式原型表自检通过"),
+    ("设计文档阈值与审查器代码脱节", mutate_slide_threshold_doc_only, "阈值"),
     ("Demo 不再产出讲义", mutate_demo_no_handout, "产出讲义"),
     ("变异测试漏掉 UbD 的用例", mutate_selftest_drop_ubd_case, "判据变异测试覆盖"),
     ("增量重生成漏到邻页", mutate_regen_leaks_to_sibling, "增量重生成只动一页"),

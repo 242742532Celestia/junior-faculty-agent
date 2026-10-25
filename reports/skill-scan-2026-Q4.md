@@ -45,8 +45,9 @@
 > - **2026-10-22 变更（其五，第 5 版）**：**幻灯片线自研回仓 + P1/P2 开工**。
 >   ① 幻灯片线原本挂在**不随包分发**的外部技能上（运行时内置的 `pptx`
 >   与本机全局的 `nature-paper2ppt`）—— 与论文线外包给 ADW 是**同一个坑**。
->   现自研：`teaching-slide-designer`（含纯标准库 PPTX 生成器
->   `build_pptx.py` 与教学规范审查器 `slide_spec_lint.py`）+
+>   现自研：`teaching-slide-designer`（课件设计口径）与 `teaching-slide-builder`
+>   （含纯标准库 PPTX 生成器 `build_pptx.py`、版式原型表 `slide_layouts.py`
+>   与教学规范审查器 `slide_spec_lint.py`）+
 >   `paper-to-talk-designer`（论文→汇报叙事）。外部技能表移除那两条登记，
 >   E7 的 `◐nature-paper2ppt` 改标 `●`，**覆盖计数不变**。
 >   ② P1：新建 `openmaic-courseware` —— OpenMAIC 课件产出链接入
@@ -54,7 +55,7 @@
 >   OpenMAIC 本体仍不随包分发）。
 >   ③ P2：新建 `teacher-style-profile`（名师风格画像与迁移）+
 >   `personal-course-pattern-builder`（个人做课记录→专属工作法）。
->   仓库现为 **86 个技能 = 66 原创 + 20 个 K-Dense**；
+>   仓库现为 **87 个技能 = 67 原创 + 20 个 K-Dense**；
 >   能力矩阵完全覆盖仍为 **34/41**（补进的都是已覆盖格里的更细颗粒能力）。
 >   新增红线 **S12 能力必须随交付物走**，并加了「幻灯片能力自足」一组守卫
 >   —— 其中最硬的一条是**直接跑自研脚本的 `--selftest`**，
@@ -86,7 +87,7 @@
 >      在线模式的模型调用由 3 次降到 2 次（课件与讲稿不再各问模型一次）。
 >      守卫新增 3 项（文件齐全 / 唯一事实源 / 离线 Demo 真的走大纲层），
 >      变异测试新增 3 例（手改教案示例 / 改派生器 / Demo 绕过大纲层）。
->   ② **版式原型表**（新增 `skills/teaching-slide-designer/scripts/slide_layouts.py`）：
+>   ② **版式原型表**（新增 `skills/teaching-slide-builder/scripts/slide_layouts.py`）：
 >      七种版式的几何与**文字高度表**从渲染代码里抽成**数据**，
 >      渲染器与判据**共用同一份** ⇒ 判据不会与渲染器漂移。
 >      配套新增 **L15 几何溢出判据**：PowerPoint 文本框带 `normAutofit`，

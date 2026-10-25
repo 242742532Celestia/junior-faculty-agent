@@ -180,7 +180,7 @@ SAME_SURNAME_MULTI_AUTHOR = {
 def check_skill_counts():
     skills = installed_skills()
     total = len(skills)
-    check("技能总数 = 86", total == 86, "实际 %d" % total)
+    check("技能总数 = 87", total == 87, "实际 %d" % total)
 
     buckets = {"edu": [], "kdense": [], "nc": [], "own": []}
     for s in sorted(skills):
@@ -750,9 +750,9 @@ def check_external_skills():
 #      ④ 两个脚本的 --selftest **真的跑得过** —— 这一条最硬：它证明的是
 #         「克隆下来就能用」，而不只是「文件在」。
 # ─────────────────────────────────────────────────────────────
-SLIDE_PPTX_MAKER = "skills/teaching-slide-designer/scripts/build_pptx.py"
-SLIDE_SPEC_LINT = "skills/teaching-slide-designer/scripts/slide_spec_lint.py"
-SLIDE_LAYOUTS = "skills/teaching-slide-designer/scripts/slide_layouts.py"
+SLIDE_PPTX_MAKER = "skills/teaching-slide-builder/scripts/build_pptx.py"
+SLIDE_SPEC_LINT = "skills/teaching-slide-builder/scripts/slide_spec_lint.py"
+SLIDE_LAYOUTS = "skills/teaching-slide-builder/scripts/slide_layouts.py"
 
 # 已知会做 PPTX 的外部技能名。任何一个重新出现在外部技能表或矩阵里，
 # 都说明"幻灯片能力又外包出去了"。
@@ -905,6 +905,63 @@ def check_slide_selfsufficiency():
     # 版式原型表：渲染器与判据共用的那一份几何。表坏了 ⇒ 渲染和判据一起坏。
     ok3, d3 = _run_script(SLIDE_LAYOUTS, [])
     check("版式原型表自检通过（几何与文字高度表自洽）", ok3, d3)
+
+
+# ─────────────────────────────────────────────────────────────
+# 4a. 幻灯片阈值的单一出处：设计文档 ↔ 审查器代码
+#
+# 🔴 为什么要有这条：阈值（每页几条要点、单条几个字、标题几个字）
+#    同时出现在两个地方 —— **文档**（给教师看、给评审看）与
+#    **代码**（slide_spec_lint.py 的 THRESHOLDS，给工具用）。
+#    两处各写一份时，改了一处忘了另一处 ⇒
+#    教师按文档判断"6 条没问题"，工具却报 ERROR，
+#    而两边都坚称自己是对的。**没有人会发现这件事**。
+#
+#    做法：设计技能文档里放一段**机器可读**的阈值块（```python 代码块），
+#    守卫把它解析出来与代码里的 THRESHOLDS **逐项比对**。
+#    改文档忘了改代码（或反之）⇒ 这条立刻红。
+# ─────────────────────────────────────────────────────────────
+SLIDE_DESIGNER_DOC = "skills/teaching-slide-designer/SKILL.md"
+THRESHOLD_BLOCK_RE = re.compile(
+    r"```python\s*\nLINT_THRESHOLDS\s*=\s*(\{.*?\})\s*\n```", re.S)
+
+
+def _slide_lint_thresholds():
+    """读审查器代码里的 THRESHOLDS（读不到返回 None）。"""
+    try:
+        import importlib.util
+        p = os.path.join(ROOT, SLIDE_SPEC_LINT.replace("/", os.sep))
+        sp = importlib.util.spec_from_file_location("jfa_slide_lint_th", p)
+        mod = importlib.util.module_from_spec(sp)
+        sp.loader.exec_module(mod)
+        return dict(mod.THRESHOLDS)
+    except Exception:
+        return None
+
+
+def check_slide_thresholds_sync():
+    check("设计技能文档里有机器可读的阈值块", bool(THRESHOLD_BLOCK_RE.search(
+        read(SLIDE_DESIGNER_DOC) or "")), "找不到 LINT_THRESHOLDS 代码块")
+    m = THRESHOLD_BLOCK_RE.search(read(SLIDE_DESIGNER_DOC) or "")
+    if not m:
+        return
+    import ast
+    try:
+        doc_th = ast.literal_eval(m.group(1))
+    except Exception as e:
+        check("设计技能文档里的阈值块可解析", False, str(e))
+        return
+    check("设计技能文档里的阈值块可解析", True)
+    code_th = _slide_lint_thresholds()
+    if code_th is None:
+        check("审查器 THRESHOLDS 可读取", False, "读取失败")
+        return
+    diff = {}
+    for k in sorted(set(doc_th) | set(code_th)):
+        if doc_th.get(k) != code_th.get(k):
+            diff[k] = "文档 %s ≠ 代码 %s" % (doc_th.get(k), code_th.get(k))
+    check("设计文档阈值 ↔ 审查器 THRESHOLDS 逐项相等", not diff,
+          "; ".join("%s: %s" % (k, v) for k, v in diff.items()))
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1697,6 +1754,7 @@ def main():
     _guard_call("README 自检数字", check_readme_selfcheck_counts)
     _guard_call("外部技能登记表", check_external_skills)
     _guard_call("幻灯片能力自足", check_slide_selfsufficiency)
+    _guard_call("幻灯片阈值单一出处", check_slide_thresholds_sync)
     _guard_call("分档出包", check_profiles)
     _guard_call("演示程序", check_demo)
     _guard_call("大纲先行层", check_outline_layer)

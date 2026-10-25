@@ -2,7 +2,7 @@
 
 > 这是**巡检基线**。每季度巡检后更新。
 > 「覆盖状态」记录某能力格是否已有技能接住；`—` 表示缺口，是巡检时优先补的候选。
-> 维护人：junior-faculty-agent ｜ 最近更新：2026-10-22（第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
+> 维护人：junior-faculty-agent ｜ 最近更新：2026-10-26（第 7 版：**课件线拆分** —— `teaching-slide-designer` 拆成**设计**（写什么：认知任务 / 断言式标题 / 讲稿分离 / 阈值）与**生成**（怎么生成：PPTX 生成器 / 版式几何 / 溢出判据 / 实开验收）两个技能，后者名为 `teaching-slide-builder`，三支脚本随之迁入其 `scripts/`；两技能同挂 B7 与 E7。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
 
 ## 一、能力格清单
 
@@ -33,8 +33,9 @@
 >
 > 📌 **幻灯片线已自研并回仓（2026-10-22 第 5 版）**：E7 原先依赖本机全局技能
 > `nature-paper2ppt`（◐，**不随本仓库分发**）与运行时内置的 `pptx` 技能。
-> 现已由本仓库自研的 `teaching-slide-designer`（含**纯标准库 PPTX 生成器**
-> `build_pptx.py` 与**教学规范审查器** `slide_spec_lint.py`）与
+> 现已由本仓库自研的 `teaching-slide-designer`（课件**设计**：认知任务、断言式标题、
+> 讲稿分离、来源标注）与 `teaching-slide-builder`（课件**生成**：含**纯标准库 PPTX 生成器**
+> `build_pptx.py`、**版式原型表** `slide_layouts.py` 与**教学规范审查器** `slide_spec_lint.py`）与
 > `paper-to-talk-designer`（论文→汇报叙事）承担，**克隆即可用**。
 > 这与论文线回仓是同一个理由：**能力必须随交付物走** ——
 > 挂在不随包分发的外部技能上，克隆方就没人接手。
@@ -89,7 +90,7 @@
 | B4 课堂提问与讨论组织 | 产出提问序列、讨论协议、苏格拉底式追问 | ●hinge-question-designer, ●socratic-questioning-sequence-generator, ●discussion-protocol-selector, ●dialogic-teaching-move-generator | 已覆盖 |
 | B5 理解检测 | 为每个教学环节配理解检查技术 | ●checking-for-understanding-protocol-designer, ●formative-assessment-technique-selector, ●feynman-diagnostic-cycle | 已覆盖 |
 | B6 认知负荷与记忆设计 | 能做认知负荷分析、间隔与提取练习安排 | ●cognitive-load-analyser, ●dual-coding-designer, ●retrieval-practice-generator, ●spaced-practice-scheduler | 已覆盖 |
-| B7 板书与可视化 | 产出板书结构/示意图/教学幻灯片 | ●markdown-mermaid-writing, ●scientific-schematics, ●teaching-slide-designer | 部分覆盖（示意图与幻灯片已覆盖；板书结构无已装技能） |
+| B7 板书与可视化 | 产出板书结构/示意图/教学幻灯片 | ●markdown-mermaid-writing, ●scientific-schematics, ●teaching-slide-designer, ●teaching-slide-builder | 部分覆盖（示意图与幻灯片已覆盖；板书结构无已装技能） |
 
 ### C. 考核与评价
 
@@ -124,7 +125,7 @@
 | E4 论文写作与投稿 | 产出 IMRaD 稿件与投稿件 | ●scientific-writing, ●venue-templates, ●submission-readiness | 已覆盖 |
 | E5 同行评议与回应 | 产出审稿意见与逐点回复 | ●peer-review, ●scholar-evaluation, ●assertive-writing, ◐nature-response | 已覆盖 |
 | E6 图表与可视化 | 产出投稿级图表 | ●scientific-visualization, ◐nature-figure | 已覆盖 |
-| E7 学术汇报 | 产出会议 slides / 海报 | ●latex-posters, ●scientific-slides, ●paper-to-talk-designer, ●teaching-slide-designer | 已覆盖 |
+| E7 学术汇报 | 产出会议 slides / 海报 | ●latex-posters, ●scientific-slides, ●paper-to-talk-designer, ●teaching-slide-designer, ●teaching-slide-builder | 已覆盖 |
 | E8 **项目申报书** | 产出基金/项目申报书全文本 | **●grant-proposal-writer**（中文基金专用）, ●citation-audit（引用核验）, ◐nature-proposal-writer, ◐researchwrite | 已覆盖 |
 | E9 教学研究论文 | 把教学改进写成可投稿论文 | ●scientific-writing（正文）, ●research-grants, ●statistical-analysis, 教研类技能（教学改进→可投稿设计） | 已覆盖 |
 | E10 学术简历与个人主页 | 产出 CV / 主页文案 | — | **缺口** |

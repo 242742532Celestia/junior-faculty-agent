@@ -38,7 +38,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(ROOT, "skills", "teaching-slide-designer", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "skills", "teaching-slide-builder", "scripts"))
 
 import llm  # noqa: E402
 import outline as outline_mod  # noqa: E402

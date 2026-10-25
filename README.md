@@ -60,7 +60,7 @@
 | 本 Agent 私有编写 | 5 | 中国基金申报书、命题题库、教学文件产出规范、季度巡检流程、高校语境映射 | **MIT**（原创） |
 | 论文线原创编写（2026-10-22 新增） | 3 | `citation-audit`（引用真实性核验 + 编号对账）、`assertive-writing`（防御性写作 + 写作雷区）、`submission-readiness`（投稿前体检） | **MIT**（原创） |
 | **OpenMAIC 方法论内核适配（2026-10-22 新增）** | 3 | `authentic-context-course-designer`（真实情境→表现性任务→可观察证据→迁移）、`feynman-diagnostic-cycle`（费曼 8 步理解诊断）、`vocational-task-course`（职业实训任务引擎课程） | **MIT**（原创，方法论内核适配自 OpenMAIC，署名见 `THIRD-PARTY-NOTICES.md` §3） |
-| **课件产出与幻灯片线自研（2026-10-22 第 5 版新增）** | 3 | `teaching-slide-designer`（教学幻灯片设计 + **纯标准库 PPTX 生成器** + 教学规范审查器）、`paper-to-talk-designer`（论文→汇报叙事）、`openmaic-courseware`（OpenMAIC 课件产出链接入 + 容器编排） | **MIT**（原创；`openmaic-courseware` 的方法论内核适配自 OpenMAIC，署名见 `THIRD-PARTY-NOTICES.md` §3） |
+| **课件产出与幻灯片线自研（2026-10-22 第 5 版新增）** | 4 | `teaching-slide-designer`（教学幻灯片**设计**：一页一个认知任务、断言式标题、讲稿分离）、`teaching-slide-builder`（课件**生成**：纯标准库 PPTX 生成器 + 版式几何 + 溢出判据 + 实开验收）、`paper-to-talk-designer`（论文→汇报叙事）、`openmaic-courseware`（OpenMAIC 课件产出链接入 + 容器编排） | **MIT**（原创；`openmaic-courseware` 的方法论内核适配自 OpenMAIC，署名见 `THIRD-PARTY-NOTICES.md` §3） |
 | **教师风格与个人方法论（2026-10-22 第 5 版新增）** | 2 | `teacher-style-profile`（名师风格画像与迁移）、`personal-course-pattern-builder`（个人做课记录→专属工作法） | **MIT**（原创；方法论内核适配自 OpenMAIC，署名见 `THIRD-PARTY-NOTICES.md` §3） |
 
 > 📌 **幻灯片线为什么要自研**：第 5 版之前，「做 PPT」这件事挂在**运行时内置**的
@@ -217,7 +217,7 @@ junior-faculty-agent/
 │   ├── MIT-K-Dense.txt                            # 19 个 K-Dense MIT 技能
 │   ├── Apache-2.0-markdown-mermaid-writing.txt   # Apache §4(a)：须随包提供副本
 │   └── OpenMAIC-MIT.txt                           # MIT (c) 2026 THU-MAIC：3 个衍生技能的署名依据
-├── skills/                               # 86 个技能（66 原创 + 20 GitHub）
+├── skills/                               # 87 个技能（67 原创 + 20 GitHub）
 │   ├── grant-proposal-writer/            # 私有：项目申报书
 │   ├── exam-question-bank/               # 私有：命题与题库
 │   ├── teaching-file-builder/            # 私有：教学文件产出规范
@@ -229,7 +229,8 @@ junior-faculty-agent/
 │   ├── authentic-context-course-designer/# 原创：真实情境课程设计（OpenMAIC 内核）
 │   ├── feynman-diagnostic-cycle/         # 原创：费曼 8 步理解诊断（OpenMAIC 内核）
 │   ├── vocational-task-course/           # 原创：职业实训任务课程（OpenMAIC 内核）
-│   ├── teaching-slide-designer/          # 原创：教学幻灯片设计（自带 PPTX 生成器）
+│   ├── teaching-slide-designer/          # 原创：教学幻灯片设计（写什么：认知任务/断言式标题/讲稿分离）
+│   ├── teaching-slide-builder/           # 原创：课件生成（怎么生成：PPTX 生成器 + 版式几何 + 实开验收）
 │   ├── paper-to-talk-designer/           # 原创：论文→学术汇报叙事
 │   ├── openmaic-courseware/              # 原创：OpenMAIC 课件产出链接入（OpenMAIC 内核）
 │   ├── teacher-style-profile/            # 原创：名师风格画像与迁移（OpenMAIC 内核）
@@ -332,25 +333,25 @@ python scripts\skill_scan.py --selftest
 # selftest: 20/20 checks passed
 
 python scripts\verify_repo.py
-# verify_repo: 105/105 checks passed
+# verify_repo: 108/108 checks passed
 
 python scripts\verify_rewrite.py
-# verify_rewrite: 666/666 checks passed
+# verify_rewrite: 677/677 checks passed
 #   （这是**无上游原文**时的口径，也是克隆方默认会看到的数；
-#     带上游原文（--upstream / JFA_UPSTREAM）会多跑 50 项 clean-room 相似度核对 ⇒ 716）
+#     带上游原文（--upstream / JFA_UPSTREAM）会多跑 50 项 clean-room 相似度核对 ⇒ 727）
 
 python scripts\test_verify_repo.py
-# 51/51 项变异均被守卫在预期检查项上抓到
+# 52/52 项变异均被守卫在预期检查项上抓到
 # （另有 3 项 verify_rewrite 变异：交叉引用悬空 / 标准章节改名 / license 非 MIT）
 # （另有 3 项出包器变异：矩阵归属漂移 / 档位能力域被删 / 包内缺许可副本 → 必须中止出包）
 
 python scripts\package_release.py --build
-# → dist/junior-faculty-agent-1.0.0.zip（515 个文件 + MANIFEST.json）
+# → dist/junior-faculty-agent-1.0.0.zip（516 个文件 + MANIFEST.json）
 # PASS  分发包校验通过 / 商业可用 True（不含 NonCommercial）
 #   克隆即用  : 已通过（包内 demo 自检 + 大纲唯一事实源 + 端到端）
 
 python scripts\github_release.py --build
-# → dist/junior-faculty-agent-1.0.0-source.zip（515 个文件 + MANIFEST.json）
+# → dist/junior-faculty-agent-1.0.0-source.zip（516 个文件 + MANIFEST.json）
 # → dist/RELEASE_NOTES.md
 # PASS  GitHub 源码包校验通过 / 克隆即用 已通过
 
@@ -497,7 +498,7 @@ Linux + Windows × Python 3.9 / 3.13，各跑一遍 `verify_repo` / `verify_rewr
 | 私有技能与脚本文档 | 8 | **MIT** | ✅ 允许 | 原创 |
 | 论文线原创技能 | 3 | **MIT** | ✅ 允许 | 原创（`citation-audit` / `assertive-writing` / `submission-readiness`） |
 | **OpenMAIC 方法论内核适配技能** | 3 | **MIT** | ✅ 允许 | **须保留版权声明与许可声明**（MIT）；副本在 `licenses/OpenMAIC-MIT.txt`，署名 THU-MAIC |
-| 课件产出与幻灯片线自研技能 | 3 | **MIT** | ✅ 允许 | 原创（`teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware`）；其中 `openmaic-courseware` 另受 OpenMAIC 署名条款约束 |
+| 课件产出与幻灯片线自研技能 | 4 | **MIT** | ✅ 允许 | 原创（`teaching-slide-designer` / `teaching-slide-builder` / `paper-to-talk-designer` / `openmaic-courseware`）；其中 `openmaic-courseware` 另受 OpenMAIC 署名条款约束 |
 | 教师风格与个人方法论技能 | 2 | **MIT** | ✅ 允许 | 原创（`teacher-style-profile` / `personal-course-pattern-builder`）；另受 OpenMAIC 署名条款约束 |
 | 科研技能（`scientific-agent-skills`） | 19 | **MIT** | ✅ 允许 | 保留版权声明与许可声明 |
 | `markdown-mermaid-writing` | 1 | **Apache-2.0** | ✅ 允许 | **须随包提供许可副本 + 保留署名 + 标注改动**（Apache §4） |
@@ -598,7 +599,8 @@ teaching ∪ research == full − {skill-scan}
    依赖这些技能的格子会退化为「部分覆盖」。
    **论文线与幻灯片线不在此列** —— 两者都已随仓库分发
    （论文线 9 个 K-Dense MIT + 3 个原创；幻灯片线 `teaching-slide-designer`
-   + `paper-to-talk-designer` + `openmaic-courseware`，自带纯标准库 PPTX 生成器）。
+   + `teaching-slide-builder` + `paper-to-talk-designer` + `openmaic-courseware`，
+   自带纯标准库 PPTX 生成器）。
 6. **上游自带的悬空交叉引用**（K-Dense 保留技能的两类）：
    - `experimental-design`、`uncertainty-and-units`、`scientific-brainstorming`
      在正文里提到同级技能 `statistical-power`，但该技能**不在该上游仓库已安装的
@@ -609,7 +611,7 @@ teaching ∪ research == full − {skill-scan}
      **回装本仓库**（论文线随包分发）。命中时直接用即可。
    为保持上游内容原样（见 `NOTICE.md`），本仓库**未修改**这些文件正文，
    改为在本项目自己的文档里改用真实存在的技能。
-   （本项目自己编写的 86 个技能**不含**悬空引用 ——
+   （本项目自己编写的 87 个技能**不含**悬空引用 ——
    `scripts/verify_rewrite.py` 的**全仓交叉引用校验**对 `skills/` 下每一个技能
    逐条机械校验，外部技能须登记在 `references/external-skills.json`。）
 7. **`skills-archive/` 是本机自用副本，不随分发**：里面是 3 个 CC BY-NC 4.0

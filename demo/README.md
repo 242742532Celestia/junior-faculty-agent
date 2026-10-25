@@ -114,7 +114,7 @@ python demo\run_demo.py --mode live --lint             # 额外做一次模型�
 ### 提示词里的规则**来自仓库自己的技能文档**
 
 `demo/llm.py` 把 `skills/teaching-file-builder`、`skills/exam-question-bank`、
-`skills/teaching-slide-designer` 三份 SKILL.md 的相关章节**摘出来**塞进提示词，
+`skills/teaching-slide-designer`、`skills/teaching-slide-builder` 四份 SKILL.md 的相关章节**摘出来**塞进提示词，
 而不是在这里另写一套。技能改了，提示词跟着改 —— 不存在两份规则。
 
 ---
@@ -179,7 +179,7 @@ python demo\run_demo.py --mode live --lint             # 额外做一次模型�
 L01–L15 全部生效：一页几条要点、标题是不是断言、讲稿有没有、
 封面是否唯一、有没有"如上图"这种线性指代、事实类页面有没有来源标注……
 
-判据**不重写一份** —— 直接加载 `skills/teaching-slide-designer/scripts/slide_spec_lint.py`，
+判据**不重写一份** —— 直接加载 `skills/teaching-slide-builder/scripts/slide_spec_lint.py`，
 避免两份规则漂移。
 
 ---

@@ -73,7 +73,7 @@ x-mavis:
 | | 同行评议与回应 | `peer-review`、`scholar-evaluation`、`assertive-writing` |
 | | 图表与可视化 | `scientific-visualization`、`scientific-schematics`、`markdown-mermaid-writing` |
 | | 学术汇报 | `latex-posters`、`scientific-slides`、`paper-to-talk-designer` |
-| | 课件与幻灯片产出 | `teaching-slide-designer`（自带纯标准库 PPTX 生成器）、`openmaic-courseware`（互动课堂引擎接入） |
+| | 课件与幻灯片产出 | `teaching-slide-designer`（课件**设计**：认知任务/断言式标题/讲稿分离）、`teaching-slide-builder`（课件**生成**：自带纯标准库 PPTX 生成器）、`openmaic-courseware`（互动课堂引擎接入） |
 | **教研提升** | 课堂观察与课例研究 | `lesson-observation-protocol-designer`、`lesson-study-cycle-designer` |
 | | 反思性实践 | `reflective-practice-prompt-generator`、`teacher-inquiry-cycle-designer` |
 | | 学科教学知识 | `pedagogical-content-knowledge-developer`、`technological-pedagogical-content-knowledge-developer` |
@@ -176,8 +176,8 @@ ISBN、学分号、毕业要求编号、基金项目号、ISSN/DOI、期刊分�
 3. **教学类任务先读 `references/he-context-adapter.md`**。
    上游教学技能是英式 K-12 语境，学段、课时、评价制度都要按映射表换成中国高校口径。
 4. **产出用中文**，专业术语首次出现中英并列（形成性评价 / formative assessment）。
-5. **文件交付**：用 `docx`/`xlsx`/`pdf` 技能与 `teaching-slide-designer` 自带的
-   **纯标准库 PPTX 生成器**（`skills/teaching-slide-designer/scripts/build_pptx.py`）
+5. **文件交付**：用 `docx`/`xlsx`/`pdf` 技能与 `teaching-slide-builder` 自带的
+   **纯标准库 PPTX 生成器**（`skills/teaching-slide-builder/scripts/build_pptx.py`）
    生成实际文件，不要只贴 Markdown 文本了事。用户要的是能拿去用的文件。
    幻灯片一律走仓库自带的生成器 —— 外部的 `pptx` / `nature-paper2ppt` 技能
    **不随本仓库分发**（见 S12）。

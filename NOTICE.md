@@ -185,6 +185,7 @@ skills/teacher-style-profile/
 skills/vocational-task-course/
 # ── 以下为本项目新写的原创技能（不进改写清单、也不由 OpenMAIC 衍生）──
 skills/paper-to-talk-designer/
+skills/teaching-slide-builder/
 skills/teaching-slide-designer/
 reports/（巡检报告与验证产出）
 ```

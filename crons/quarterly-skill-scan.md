@@ -81,15 +81,16 @@
 7. 跑 Demo 的两层自检（都必须全绿）：
    - `python demo/selftest.py` —— 57/57（判据的变异测试：会红，不是空转）
    - `python demo/run_demo.py --out demo/out` —— 离线零 ERROR
-   - `python scripts/test_verify_repo.py` —— 全部 51 项变异（45 + 3 + 3）
+   - `python scripts/test_verify_repo.py` —— 全部 52 项变异（46 + 3 + 3）
 
-> 📌 **当前仓库状态（2026-10-22 第 6 版）**：86 个技能 = **66 个本项目原创**
+> 📌 **当前仓库状态（2026-10-26 第 7 版）**：87 个技能 = **67 个本项目原创**
 > （50 个教学技能 clean-room 重写 + 5 个私有 + 3 个论文线原创
-> + **6 个 OpenMAIC 方法论内核适配** + **2 个纯原创**（幻灯片线与教师风格线））
+> + **6 个 OpenMAIC 方法论内核适配** + **3 个纯原创**（幻灯片线与教师风格线））
 > + **20 个 K-Dense**（19 MIT + 1 Apache-2.0）。**论文线与幻灯片线都随包分发**，
 > 不依赖任何本机全局技能 —— 能力矩阵 E2 / E4 / E5 / E9 四格为「**已覆盖**」，
 > E7（学术汇报）也已去掉 `◐nature-paper2ppt`，改由
-> `teaching-slide-designer` / `paper-to-talk-designer` 承担。
+> `teaching-slide-designer`（设计）/ `teaching-slide-builder`（生成）/
+> `paper-to-talk-designer` 承担。
 >
 > 📌 **分档出包（第 6 版新增）**：`package_release.py --profile teaching|research|full`。
 > 技能集合由能力矩阵的能力域**机械推导**（`references/profiles.json` +

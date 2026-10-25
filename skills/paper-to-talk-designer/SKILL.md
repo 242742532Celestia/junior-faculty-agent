@@ -131,7 +131,7 @@ metadata:
 
 ### 第 8 步：交付三件套
 
-1. **幻灯片规格**——可直接喂给本仓库 `teaching-slide-designer` 技能的生成器与审查器（那边已内置纯标准库 PPTX 生成器与教学规范 lint），字段结构沿用那套 spec。
+1. **幻灯片规格**——可直接喂给本仓库 `teaching-slide-builder` 技能的生成器与审查器（那边已内置纯标准库 PPTX 生成器与教学规范 lint），字段结构沿用那套 spec；内容口径见 `teaching-slide-designer`。
 2. **逐页讲稿**——每页写清"这一页要观众接受什么 + 口述内容 + 时间预算"，而不是把幻灯片上的字再抄一遍。
 3. **问答预案**——六类方向各两到三条，每条带论文依据位置与"不要说的"。
 
@@ -239,7 +239,8 @@ metadata:
 - 会议与期刊模板适配 → `venue-templates`
 - 同行评议视角自检 → `peer-review`
 - 学者评价口径 → `scholar-evaluation`
-- 教学幻灯片规范与 PPTX 生成 → `teaching-slide-designer`
+- 教学幻灯片规范 → `teaching-slide-designer`
+- PPTX 生成与版式几何 → `teaching-slide-builder`
 - 认知负荷评估 → `cognitive-load-analyser`
 - 项目简介设计（基金汇报逻辑） → `project-brief-designer`
 - 论证结构生成 → `argument-structure-scaffold-generator`

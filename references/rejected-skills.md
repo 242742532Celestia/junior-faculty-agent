@@ -203,8 +203,8 @@ qiskit / qutip / tellurium / tamarind / astropy / healpy / openmm / mdanalysis /
 
 | 能力 | 自研后的承担者 | 形态 |
 |---|---|---|
-| PPTX 生成 | `teaching-slide-designer` | `scripts/build_pptx.py` —— 纯标准库（`json`/`zipfile`），零第三方依赖，产出可被 PowerPoint 直接打开并继续编辑的 `.pptx`（含**讲授者备注**） |
-| 幻灯片教学规范 | `teaching-slide-designer` | `scripts/slide_spec_lint.py` —— 判的是「这**是不是**一份能用的教学幻灯片」（要点数、字数、断言式标题、讲稿分离、线性指代、来源标注、占位符残留），不是格式对不对 |
+| PPTX 生成 | `teaching-slide-builder` | `scripts/build_pptx.py` —— 纯标准库（`json`/`zipfile`），零第三方依赖，产出可被 PowerPoint 直接打开并继续编辑的 `.pptx`（含**讲授者备注**）；`scripts/slide_layouts.py` 是版式几何与文字高度表的**唯一一份** |
+| 幻灯片教学规范 | `teaching-slide-designer`（设计口径）+ `teaching-slide-builder`（审查器） | `scripts/slide_spec_lint.py` —— 判的是「这**是不是**一份能用的教学幻灯片」（要点数、字数、断言式标题、讲稿分离、线性指代、来源标注、占位符残留），不是格式对不对 |
 | 论文→汇报叙事 | `paper-to-talk-designer` | 技能（论文结构 → 汇报叙事的映射） |
 
 **已从 `references/external-skills.json` 移除** `pptx` 与 `nature-paper2ppt` 两条登记，

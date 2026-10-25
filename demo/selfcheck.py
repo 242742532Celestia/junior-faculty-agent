@@ -623,7 +623,7 @@ def check_slides(spec):
     out = []
     try:
         lint = _load_skill_module(
-            "skills/teaching-slide-designer/scripts/slide_spec_lint.py",
+            "skills/teaching-slide-builder/scripts/slide_spec_lint.py",
             "jfa_slide_spec_lint")
     except Exception as e:
         _add(out, ERROR, "SL-P00", "slide_spec_lint", "加载失败：%s" % e)
