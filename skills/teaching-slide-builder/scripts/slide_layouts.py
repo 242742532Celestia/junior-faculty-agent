@@ -556,8 +556,9 @@ def _card_slots(name, x, y, w, h, accent, tint, deep, cols,
     # 🔴 徽章与内容是**左右并排**（徽章在左、正文在右），
     #    所以徽章**不占正文的高度**；整组高度取两者较大值。
     group_h = max(content_h, BADGE_D) if badge else content_h
-    free = h - CARD_BAR_H - group_h
-    cy = y + CARD_BAR_H + max(CARD_PAD_Y, free / 2.0)
+    # 🔴 内容**顶对齐**（不是垂直居中）：参考课件的卡片内容都贴着卡顶，
+    #    这样同一行几张卡的标题落在**同一条基线**上；居中会让每张卡各飘各的。
+    cy = y + CARD_BAR_H + CARD_PAD_Y
 
     if badge:
         badge_y = cy + max(0.0, (content_h - BADGE_D) / 2.0)
