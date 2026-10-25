@@ -12,7 +12,7 @@
 
 本模块把几何**抽成数据**：
 
-* `CANVAS` / `PROTOTYPES` —— 画布与 7 种版式的槽位表
+* `CANVAS` / `PROTOTYPES` —— 画布与各版式的槽位表
 * `TEXT_HEIGHT` —— 文字高度表（字号 × 行数 → 所需框高）
 
 渲染器（`build_pptx.py`）与判据（`slide_spec_lint.py`）**共用这一份**：
@@ -24,23 +24,27 @@
 🔴 **字号约定**：本模块的 `sz` 是**磅**；OOXML 的 `sz` 是**百分之一磅**，
 换算在 `build_pptx.py` 里做（×100）。两处各写各的 ⇒ 必出 0.44 磅的错。
 
-视觉设计
---------
+视觉设计（v2 —— 对齐参考课件）
+------------------------------
 本表的画布、色板、字号、卡片几何**实测自**参考课件
 （`结构化研讨：理论与实践.pptx`，PptxGenJS 生成），不是凭印象配的。
 参考课件的视觉身份：
 
-* 画布 720 × 405 pt（10 × 5.625 in，16:9）
-* 左边距 43.2 pt（0.6 in），内容宽 633.6 pt（8.8 in）
-* 页标题 23 pt 粗体；卡片标题 14 pt；眉题/正文 12 pt；角标/页脚 10 pt
-* 多色强调体系：每个卡片一套（强调色 / 极浅底 / 深色标题字），
-  强调色在蓝-青-紫-青绿-绿-橙-粉-琥珀之间轮转
+* 画布 720 × 405 pt（10 × 5.625 in，16:9），左边距 42.5 pt，内容宽 635 pt
+* 页标题 24 pt 粗体深色（左 50 pt）；标题下方 1.5 pt 强调色细横线；
+  眉题 11 pt 灰色（**在标题与细线之间**）
+* **卡片 = 顶部 5 pt 粗色条 + 极浅底 + 彩色粗体标题 + 灰色正文**
+* **圆形编号徽章**（实心强调色圆 + 白字数字），两栏页用
+* **表格**：深蓝表头 + 白字 + 斑马纹行 + 首列粗体居中
+* **左色条块**：左侧 5 pt 色条 + 浅底 + 粗体彩色标题 + 灰正文
+* 封面/分节页右上角**深色课时块**（白字两行）
+* 页脚是**标签串**：粗体前缀 + ｜ 分隔
 
 坐标系
 ------
 * 画布 720 × 405 pt（10 × 5.625 in，16:9），原点左上角
-* 左边距 43.2 pt（0.6 in），内容宽 633.6 pt
-* 内容区上边 112 pt，下边 36 pt ⇒ 正文可用高 257 pt
+* 左边距 42.5 pt，内容宽 635 pt
+* 正文区上边 112 pt，下边 58 pt ⇒ 正文可用高 235 pt
 """
 from __future__ import annotations
 
@@ -54,21 +58,33 @@ import sys
 CANVAS = {
     "w": 720.0,          # 10 in（16:9）
     "h": 405.0,          # 5.625 in
-    "margin": 43.2,      # 0.6 in
-    "body_top": 120.0,   # 正文区上边
-    "body_bottom": 36.0, # 正文区下边
+    "margin": 42.5,      # 参考稿实测：内容左边缘 85px ÷ 2 = 42.5pt
+    "body_top": 112.0,   # 正文区上边（细横线之下）
+    "body_bottom": 58.0, # 正文区下边（页脚之上）
 }
-CONTENT_W = CANVAS["w"] - 2 * CANVAS["margin"]            # 633.6
-BODY_H = CANVAS["h"] - CANVAS["body_top"] - CANVAS["body_bottom"]   # 257
+CONTENT_W = CANVAS["w"] - 2 * CANVAS["margin"]            # 635
+BODY_H = CANVAS["h"] - CANVAS["body_top"] - CANVAS["body_bottom"]   # 235
 
-COL_GAP = 14.4
-COL_W = (CONTENT_W - COL_GAP) / 2                         # 309.6
+COL_GAP = 13.0           # 卡片/列间距（参考稿实测 ≈13pt）
+COL_W = (CONTENT_W - COL_GAP) / 2                         # 311
 IMG_INSET = 43.2
-IMG_W = CONTENT_W - 2 * IMG_INSET                         # 547.2
+IMG_W = CONTENT_W - 2 * IMG_INSET                         # 548.4
 CAPTION_H = 24.0
 CAPTION_BAND = 40.0                                      # 有图注时图片让出的高度
-CARD_PAD = 14.4                                          # 卡片边缘到内文的留白
-BADGE_ZONE = 38.0                                        # 角标占的高度（角标 + 间距）
+
+# 卡片几何
+CARD_BAR_H = 5.0         # 顶部粗色条高度
+CARD_PAD_X = 13.0        # 卡片左右内边距
+CARD_PAD_X_NARROW = 10.0 # 多列（≥4 列）时收紧
+CARD_PAD_Y = 12.0        # 卡片上下内边距
+CARD_MIN_H = 76.0        # 卡片的最小高度（内容少也要像个"块"）
+TITLE_GAP = 4.0          # 卡片标题与正文之间的间距
+BADGE_D = 30.0           # 圆形编号徽章直径（参考稿实测 60px ÷ 2）
+
+# 表格几何
+TABLE_HEAD_H = 29.0      # 表头行高
+TABLE_ROW_H = 30.0       # 数据行高（**固定** —— 行高自适应就失去溢出判据了）
+TABLE_CELL_PAD = 5.0
 
 # 颜色（设计 token；渲染器与判据共用）
 COLORS = {
@@ -83,6 +99,11 @@ COLORS = {
     "card": "F8FAFC",     # 卡片底
     "paper": "FFFFFF",    # 背景
     "on_accent": "FFFFFF",  # 强调色之上的反白字
+    "badge_block": "1F3864",  # 封面右上角的深色课时块
+    "table_head": "1E3A8A",  # 表格首列表头（深靛）
+    "table_head2": "1D4ED8",  # 表格其余表头（蓝）
+    "table_zebra": "DBEAFE",  # 表格斑马纹（深）
+    "table_zebra_soft": "EFF6FF",  # 表格斑马纹（浅）
 }
 
 # 多色强调体系：每一套 = (强调色, 极浅底, 深色标题字)
@@ -100,17 +121,20 @@ ACCENTS = [
 
 # 字号（磅）
 SIZES = {
-    "title": 23,         # 正文页标题
-    "title_center": 23,  # 封面 / 分节页标题
-    "subtitle": 12,      # 眉题
+    "title": 24,         # 正文页标题
+    "title_center": 30,  # 封面标题（比正文页大一号）
+    "subtitle": 13,      # 封面副标题
+    "eyebrow": 11,       # 页眉下的灰色眉题
     "body": 12,          # 正文
     "body_l2": 11,       # 次级正文
     "quote": 20,         # 引用
     "card_title": 14,    # 卡片标题
     "callout": 13,       # 提示条
-    "badge": 10,         # 角标数字
+    "badge": 12,         # 圆形徽章数字
     "caption": 9,
     "footer": 10,
+    "block": 13,         # 封面课时块第一行
+    "block2": 11,        # 封面课时块第二行
 }
 
 # ─────────────────────────────────────────────────────────────────
@@ -139,6 +163,8 @@ TEXT_HEIGHT = {
     14: {1: 19, 2: 38, 3: 57, 4: 76, 5: 95},
     20: {1: 27, 2: 54, 3: 81, 4: 108, 5: 135},
     23: {1: 32, 2: 63, 3: 94, 4: 125, 5: 156},
+    24: {1: 33, 2: 65, 3: 98, 4: 130, 5: 162},
+    30: {1: 41, 2: 81, 3: 122, 4: 162, 5: 203},
 }
 
 # 项目符号的段前距（磅），与 build_pptx 的 spcBef 一致
@@ -146,6 +172,9 @@ SPC_BEFORE = 6.0
 
 # 层级缩进：文本左边界相对框左边界的偏移
 TEXT_INDENT = {0: 0.0, 1: 14.0, 2: 42.0}
+
+# 「标签：说明」用的分隔符（全角冒号）
+LABEL_SEP = "："
 
 
 def _indent(level):
@@ -163,89 +192,68 @@ def _indent(level):
 # 槽位 kind：
 #   text    文本框
 #   rule    分隔线（细横条）
-#   rect    实心色块（卡片底 / 强调条 / 角标底）
+#   rect    实心色块（卡片底 / 强调条 / 角标底 / 表格单元）
+#   ellipse 圆形徽章
 #   picture 图片
 # ─────────────────────────────────────────────────────────────────
 PROTOTYPES = {
-    # 封面
+    # 封面（标题块垂直居中 —— 封面不该是"上面一坨、下面全空"）
     "title": {
-        "Panel": {"x": 43.2, "y": 108.0, "w": 633.6, "h": 186.0, "kind": "rect",
-                  "color": "card"},
-        "PanelBar": {"x": 43.2, "y": 108.0, "w": 4.32, "h": 186.0, "kind": "rect",
-                     "color": "accent"},
-        "Title": {"x": 64.8, "y": 144.0, "w": 540.0, "h": 76.0, "sz": 23,
+        "Title": {"x": 50.0, "y": 170.0, "w": 520.0, "h": 42.0, "sz": 30,
                   "bold": True, "color": "ink_deep", "align": "l"},
-        "Subtitle": {"x": 64.8, "y": 228.0, "w": 540.0, "h": 32.0, "sz": 12,
+        "Subtitle": {"x": 50.0, "y": 224.0, "w": 520.0, "h": 22.0, "sz": 13,
                      "color": "muted", "align": "l"},
+        "Rule": {"x": 42.5, "y": 262.0, "w": 635.0, "h": 1.5, "kind": "rule",
+                 "color": "rule_soft"},
+        # 右上角深色课时块（白字两行）
+        "Badge": {"x": 610.5, "y": 34.0, "w": 67.0, "h": 46.0, "kind": "rect",
+                  "color": "badge_block"},
+        "BadgeText": {"x": 620.0, "y": 40.0, "w": 50.0, "h": 36.0, "sz": 13,
+                      "bold": True, "color": "on_accent", "align": "l"},
         "AccentStrip": {"x": 0.0, "y": 396.0, "w": 720.0, "h": 9.0,
                         "kind": "rect", "color": "accent"},
     },
-    # 分节页
+    # 分节页（与封面同骨架，标题色与细线色不同）
     "section": {
-        "Panel": {"x": 43.2, "y": 126.0, "w": 633.6, "h": 150.0, "kind": "rect",
-                  "color": "card"},
-        "PanelBar": {"x": 43.2, "y": 126.0, "w": 4.32, "h": 150.0, "kind": "rect",
-                     "color": "accent"},
-        "Title": {"x": 64.8, "y": 156.0, "w": 540.0, "h": 60.0, "sz": 23,
+        "Title": {"x": 50.0, "y": 38.0, "w": 520.0, "h": 34.0, "sz": 24,
                   "bold": True, "color": "ink_deep", "align": "l"},
-        "Subtitle": {"x": 64.8, "y": 224.0, "w": 540.0, "h": 32.0, "sz": 12,
+        "Subtitle": {"x": 50.0, "y": 76.0, "w": 520.0, "h": 20.0, "sz": 12,
                      "color": "muted", "align": "l"},
+        "Rule": {"x": 42.5, "y": 100.0, "w": 635.0, "h": 1.5, "kind": "rule",
+                 "color": "accent"},
+        "Badge": {"x": 610.5, "y": 34.0, "w": 67.0, "h": 46.0, "kind": "rect",
+                  "color": "badge_block"},
+        "BadgeText": {"x": 620.0, "y": 40.0, "w": 50.0, "h": 36.0, "sz": 13,
+                      "bold": True, "color": "on_accent", "align": "l"},
         "AccentStrip": {"x": 0.0, "y": 396.0, "w": 720.0, "h": 9.0,
                         "kind": "rect", "color": "accent"},
     },
     # 引用
     "quote": {
-        "Bar": {"x": 43.2, "y": 140.0, "w": 4.32, "h": 96.0, "kind": "rect",
-                "color": "accent"},
-        "Quote": {"x": 60.0, "y": 140.0, "w": 560.0, "h": 96.0, "sz": 20,
-                  "color": "ink", "align": "l", "anchor": "ctr"},
-        "Attribution": {"x": 60.0, "y": 248.0, "w": 560.0, "h": 28.0, "sz": 12,
-                        "color": "muted", "align": "l"},
-    },
-    # bullets / two-column / image-focus / blank 共用的页眉区
-    "content": {
-        "Title": {"x": 43.2, "y": 28.8, "w": 633.6, "h": 43.2, "sz": 23,
+        "Title": {"x": 50.0, "y": 38.0, "w": 600.0, "h": 34.0, "sz": 24,
                   "bold": True, "color": "ink", "align": "l"},
-        "Eyebrow": {"x": 43.2, "y": 72.0, "w": 633.6, "h": 25.2, "sz": 12,
-                    "color": "muted", "align": "l"},
-        "Rule": {"x": 43.2, "y": 104.4, "w": 633.6, "h": 2.16, "kind": "rule",
+        "Rule": {"x": 42.5, "y": 100.0, "w": 635.0, "h": 1.5, "kind": "rule",
                  "color": "accent"},
-        # 正文卡：浅底 + 左侧强调条
-        "Card": {"x": 43.2, "y": 120.0, "w": 633.6, "h": 249.0, "kind": "rect",
-                 "color": "card"},
-        "CardBar": {"x": 43.2, "y": 120.0, "w": 4.32, "h": 249.0, "kind": "rect",
-                    "color": "accent"},
-        "Body": {"x": 60.0, "y": 134.4, "w": 604.8, "h": 220.2, "sz": 12},
-        # 两栏：两张白卡，各带一条强调条
-        "ColLeft": {"x": 43.2, "y": 120.0, "w": 309.6, "h": 249.0, "kind": "rect",
-                    "color": "paper"},
-        "ColLeftBar": {"x": 43.2, "y": 120.0, "w": 4.32, "h": 249.0, "kind": "rect",
-                       "color": "accent"},
-        "ColRight": {"x": 367.2, "y": 120.0, "w": 309.6, "h": 249.0, "kind": "rect",
-                     "color": "paper"},
-        "ColRightBar": {"x": 367.2, "y": 120.0, "w": 4.32, "h": 249.0, "kind": "rect",
-                        "color": "accent2"},
-        "BadgeLeft": {"x": 57.6, "y": 132.0, "w": 28.8, "h": 28.8, "kind": "rect",
-                      "color": "accent"},
-        "BadgeRight": {"x": 381.6, "y": 132.0, "w": 28.8, "h": 28.8, "kind": "rect",
-                       "color": "accent2"},
-        "BodyLeft": {"x": 57.6, "y": 170.0, "w": 281.0, "h": 187.0, "sz": 12},
-        "BodyRight": {"x": 381.6, "y": 170.0, "w": 281.0, "h": 187.0, "sz": 12},
-        # 角标文字与角标色块**同框**（不是叠在上面）⇒ 数字必然在色块正中，
-        # 不会因为字体度量差几 pt 而露到块外面去。
-        "BadgeLeftText": {"x": 57.6, "y": 132.0, "w": 28.8, "h": 28.8, "sz": 10,
-                          "bold": True, "color": "on_accent", "align": "ctr",
-                          "anchor": "ctr"},
-        "BadgeRightText": {"x": 381.6, "y": 132.0, "w": 28.8, "h": 28.8, "sz": 10,
-                           "bold": True, "color": "on_accent", "align": "ctr",
-                           "anchor": "ctr"},
-        "Picture": {"x": 43.2, "y": 120.0, "w": 633.6, "h": 249.0, "kind": "picture"},
-        "Caption": {"x": 43.2, "y": 371.0, "w": 633.6, "h": 22.0, "sz": 9,
+        "Bar": {"x": 42.5, "y": 132.0, "w": 5.0, "h": 110.0, "kind": "rect",
+                "color": "accent"},
+        "Quote": {"x": 64.0, "y": 132.0, "w": 560.0, "h": 110.0, "sz": 20,
+                  "color": "ink", "align": "l", "anchor": "ctr"},
+    },
+    # 正文页页眉区
+    "content": {
+        "Title": {"x": 50.0, "y": 38.0, "w": 600.0, "h": 34.0, "sz": 24,
+                  "bold": True, "color": "ink", "align": "l"},
+        "Eyebrow": {"x": 50.0, "y": 74.0, "w": 600.0, "h": 18.0, "sz": 11,
+                    "color": "muted", "align": "l"},
+        "Rule": {"x": 42.5, "y": 100.0, "w": 635.0, "h": 1.5, "kind": "rule",
+                 "color": "accent"},
+        "Picture": {"x": 42.5, "y": 112.0, "w": 635.0, "h": 235.0, "kind": "picture"},
+        "Caption": {"x": 42.5, "y": 356.0, "w": 635.0, "h": 20.0, "sz": 9,
                     "color": "muted", "align": "ctr"},
     },
-    # 所有版式共用的页脚
+    # 所有版式共用的页脚（标签串：粗体前缀 + 灰正文）
     "footer": {
-        "Footer": {"x": 43.2, "y": 376.0, "w": 633.6, "h": 16.0, "sz": 10,
+        "Footer": {"x": 50.0, "y": 368.0, "w": 635.0, "h": 16.0, "sz": 10,
                    "color": "muted", "align": "l"},
     },
 }
@@ -297,6 +305,11 @@ def text_width_em(s):
     for ch in str(s or ""):
         w += 0.5 if ord(ch) < 0x2E80 else 1.0
     return w
+
+
+def text_width_pt(s, font_size):
+    """文本的大致宽度（磅）：em 数 × 字号。用于估算容器宽度。"""
+    return text_width_em(s) * float(font_size)
 
 
 def chars_per_line(box_w, font_size, level=0):
@@ -365,6 +378,13 @@ def _rect_slot(group, name, **over):
     return g
 
 
+def _free_slot(name, kind, x, y, w, h, **over):
+    """凭空造一个槽位（几何不在原型表里的：卡片网格、表格单元……）。"""
+    g = {"kind": kind, "name": name, "x": x, "y": y, "w": w, "h": h}
+    g.update(over)
+    return g
+
+
 def _bullet_pars(bullets, sz, sz_l2, color="body", bullet_color=None):
     out = []
     for b in bullets:
@@ -402,27 +422,393 @@ def _paras_need(paras, box_w):
     need = 0.0
     for p in paras or []:
         sz = int(p.get("sz") or SIZES["body"])
-        lines = lines_for(p.get("text", ""), box_w, sz, int(p.get("level", 0)))
+        text = p.get("text", "")
+        if p.get("runs"):
+            text = "".join(str(r.get("text", "")) for r in p["runs"])
+        lines = lines_for(text, box_w, sz, int(p.get("level", 0)))
         need += text_height(sz, lines)
         need += float(p.get("spc_before") or 0.0)
     return need
 
 
-def _fit_card(paras, box_w, cap_h, pad, min_h=64.0):
-    """卡片（浅底 + 强调条）的高度与内文框高度。
+# ─────────────────────────────────────────────────────────────────
+# 「标签：说明」拆分
+#
+# 🔴 这条规则**不新增任何事实**：只是把已有的要点文字按第一个全角冒号
+#    拆成"标签"与"说明"两段，分别用不同字号/颜色呈现。
+#    拆分点找不到就原样返回 —— **绝不猜、绝不补**。
+# ─────────────────────────────────────────────────────────────────
+def split_label(text):
+    """拆成 (标签, 说明)。没有全角冒号 ⇒ (原文, "")。"""
+    s = str(text or "")
+    i = s.find(LABEL_SEP)
+    if i <= 0:
+        return (s, "")
+    return (s[:i], s[i + 1:])
 
-    卡片**随内容自适应**（3 条要点不该在下面留 200pt 空白），
-    但**上限是正文区高** —— 超出的部分由溢出判据报出来（`overflow()`），
-    而不是让 PowerPoint 悄悄缩字号。
-    返回 (card_h, inner_h)。
+
+def cards_from_bullets(bullets):
+    """要点 → [(卡片标题, 卡片正文行)]；不适合做卡片时返回 None。
+
+    规则（**版式规则，写在这里，不散在调用方**）：
+    * 每条一级要点 = 一张卡片；
+    * 要点里有「：」⇒ 冒号前是**标签**（做卡片标题），冒号后是**说明**（做正文）；
+    * 没有「：」⇒ 整条要点做卡片标题（**一个字不改**，只是加粗上色）；
+    * 二级要点挂到上一张卡片的正文里。
+
+    🔴 这条规则**不新增任何事实**：只把已有的字按原样重新分组。
+       渲染器与判据看到的必须是同一个判定。
     """
-    need = _paras_need(paras, box_w)
-    inner = min(need, max(cap_h - 2 * pad, 0.0))
-    card_h = max(min_h, inner + 2 * pad)
-    if card_h > cap_h:
-        card_h = cap_h
-        inner = max(cap_h - 2 * pad, 0.0)
-    return card_h, inner
+    if not bullets:
+        return None
+    cards = []
+    for b in bullets:
+        if isinstance(b, str):
+            text, level = b, 0
+        else:
+            text, level = str(b.get("text", "")), int(b.get("level", 0))
+        if level == 0:
+            t, d = split_label(text)
+            cards.append([t, [d] if d else []])
+        else:
+            if not cards:
+                return None
+            cards[-1][1].append(text)
+    return [(t, b) for t, b in cards]
+
+
+def _card_pars(body_lines, sz, color="body", bullet=False, bullet_color=None):
+    """卡片正文 → 段落规格。
+
+    🔴 卡片正文默认**不带圆点**（卡片标题已经在承担"分层"这件事）；
+       两栏版式是陈述列表，要圆点 —— 由调用方显式打开。
+    """
+    out = []
+    for i, t in enumerate(body_lines or []):
+        out.append({"text": t, "sz": sz, "level": 0,
+                    "spc_before": 0.0 if i == 0 else 4.0,
+                    "bullet": bullet,
+                    "bullet_color": bullet_color or color,
+                    "color": color, "align": "l", "bold": False})
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────
+# 卡片
+# ─────────────────────────────────────────────────────────────────
+def _card_pad_x(cols):
+    return CARD_PAD_X_NARROW if cols >= 4 else CARD_PAD_X
+
+
+def _card_inner_w(w, cols):
+    return max(w - 2 * _card_pad_x(cols), 1.0)
+
+
+def _card_content_h(title, body_paras, inner_w):
+    """一张卡片的内容高度（不含上下内边距与顶部色条）。"""
+    need = 0.0
+    if title:
+        lines = lines_for(title, inner_w, SIZES["card_title"])
+        need += text_height(SIZES["card_title"], lines) + TITLE_GAP
+    if body_paras:
+        need += _paras_need(body_paras, inner_w)
+    return need
+
+
+def _card_slots(name, x, y, w, h, accent, tint, deep, cols,
+                title="", body_lines=None, badge=None, bullet=False):
+    """一张卡片的全部槽位。
+
+    槽位顺序 = 绘制顺序（后者盖在前者之上）：
+    极浅底 → 顶部色条 → 徽章 → 徽章文字 → 标题 → 正文。
+
+    🔴 内容在卡片里**垂直居中**：卡片高度由整行统一决定，
+       内容少的时候居中比顶对齐好看，也更像参考稿的"概念块"。
+    """
+    pad = _card_pad_x(cols)
+    out = []
+    out.append(_free_slot(name + "Fill", "rect", x, y, w, h, color=tint))
+    out.append(_free_slot(name + "Bar", "rect", x, y, w, CARD_BAR_H, color=accent))
+
+    inner_x = x + pad
+    inner_w = _card_inner_w(w, cols)
+    content_x = inner_x
+    content_w = inner_w
+
+    if badge:
+        content_x = inner_x + BADGE_D + 12.0
+        content_w = max(content_w - BADGE_D - 12.0, 1.0)
+
+    title_h = 0.0
+    if title:
+        title_h = text_height(SIZES["card_title"],
+                               lines_for(title, content_w, SIZES["card_title"]))
+    body_pars = []
+    body_h = 0.0
+    if body_lines:
+        body_pars = _card_pars(body_lines, SIZES["body"], COLORS["body"],
+                                bullet=bullet, bullet_color=accent)
+        body_h = _paras_need(body_pars, content_w)
+
+    content_h = title_h + body_h
+    if title and body_pars:
+        content_h += TITLE_GAP
+    # 🔴 徽章与内容是**左右并排**（徽章在左、正文在右），
+    #    所以徽章**不占正文的高度**；整组高度取两者较大值。
+    group_h = max(content_h, BADGE_D) if badge else content_h
+    free = h - CARD_BAR_H - group_h
+    cy = y + CARD_BAR_H + max(CARD_PAD_Y, free / 2.0)
+
+    if badge:
+        badge_y = cy + max(0.0, (content_h - BADGE_D) / 2.0)
+        out.append(_free_slot(name + "Badge", "ellipse", inner_x, badge_y,
+                              BADGE_D, BADGE_D, color=accent))
+        out.append(_free_slot(name + "BadgeText", "text", inner_x, badge_y,
+                              BADGE_D, BADGE_D, sz=SIZES["badge"], bold=True,
+                              color="on_accent", align="ctr", anchor="ctr",
+                              paras=[{"text": badge, "sz": SIZES["badge"],
+                                      "bold": True, "color": "on_accent",
+                                      "align": "ctr", "bullet": False}]))
+
+    if title:
+        out.append(_free_slot(name + "Title", "text", content_x, cy, content_w,
+                              title_h, sz=SIZES["card_title"], bold=True,
+                              color=deep, align="l",
+                              paras=[{"text": title, "sz": SIZES["card_title"],
+                                      "bold": True, "color": deep,
+                                      "align": "l", "bullet": False}]))
+        cy += title_h + TITLE_GAP
+
+    if body_pars:
+        avail = max(y + h - CARD_PAD_Y - cy, 0.0)
+        out.append(_free_slot(name + "Body", "text", content_x, cy, content_w,
+                              avail, sz=SIZES["body"], paras=body_pars))
+    return out
+
+
+def _grid_shape(n):
+    """n 张卡片 → (列数, 行数)。"""
+    if n <= 2:
+        return (max(n, 1), 1)
+    if n == 3:
+        return (3, 1)
+    if n == 4:
+        return (2, 2)
+    if n == 5:
+        return (5, 1)
+    if n == 6:
+        return (3, 2)
+    cols = 3
+    return (cols, (n + cols - 1) // cols)
+
+
+def _card_grid(cards, pair):
+    """卡片网格的槽位。
+
+    🔴 卡片高度**按内容算**，再夹在 [最小高, 本行可用高] 之间：
+       内容超出可用高 ⇒ 卡片被压到可用高 ⇒ **溢出判据会报出来**，
+       而不是让 PowerPoint 悄悄缩字号。
+    """
+    n = len(cards)
+    cols, rows = _grid_shape(n)
+    gap = COL_GAP
+    card_w = (CONTENT_W - (cols - 1) * gap) / float(cols)
+    row_h = (BODY_H - (rows - 1) * gap) / float(rows)
+    inner_w = _card_inner_w(card_w, cols)
+
+    need_h = []
+    for t, bl in cards:
+        body = _card_pars(bl, SIZES["body"], COLORS["body"]) if bl else []
+        need_h.append(CARD_BAR_H + 2 * CARD_PAD_Y +
+                      _card_content_h(t, body, inner_w))
+
+    # 🔴 卡片高度下限跟着**版心高度**走：内容少的页也不塌成一条细带，
+    #    否则整页的空白会全堆在底部（参考稿里卡片是占住版心的）。
+    min_h = max(CARD_MIN_H, row_h * 0.55)
+
+    out = []
+    for idx, (t, bl) in enumerate(cards):
+        r = idx // cols
+        c = idx % cols
+        x = CANVAS["margin"] + c * (card_w + gap)
+        y = CANVAS["body_top"] + r * (row_h + gap)
+        row_need = max(need_h[r * cols:(r + 1) * cols] or [0.0])
+        h = max(min_h, min(row_h, row_need))
+        out.extend(_card_slots("Card%d" % (idx + 1), x, y, card_w, h,
+                                pair["accent"], pair["tint"], pair["deep"], cols,
+                                title=t, body_lines=bl))
+    return out
+
+
+def _block_slots(bullets, pair):
+    """左色条块（**保留的备选版式**：要点带二级层级、无法拆成卡片时用）。
+
+    几何取自参考课件第 2 页：左侧 5pt 色条 + 浅底 + 圆点要点。
+    块宽按**文字实际宽度**估（不做满宽），与参考稿一致。
+    """
+    bp = _bullet_pars(bullets, SIZES["body"], SIZES["body_l2"],
+                      color=COLORS["body"], bullet_color=pair["accent"])
+    inner_w = CONTENT_W - 5.0 - 22.0 - 16.0
+    need = _paras_need(bp, inner_w)
+    text_w = 0.0
+    for p in bp:
+        text_w = max(text_w, text_width_pt(p.get("text", ""), p.get("sz", 12)))
+    block_w = min(CONTENT_W, max(320.0, text_w + 5.0 + 22.0 + 16.0))
+    block_h = max(CARD_MIN_H, min(BODY_H, need + 2 * CARD_PAD_Y))
+    out = [_free_slot("BlockFill", "rect", CANVAS["margin"], CANVAS["body_top"],
+                      block_w, block_h, color=pair["tint"]),
+           _free_slot("BlockBar", "rect", CANVAS["margin"], CANVAS["body_top"],
+                      5.0, block_h, color=pair["accent"]),
+           _free_slot("BlockBody", "text", CANVAS["margin"] + 5.0 + 22.0,
+                      CANVAS["body_top"] + CARD_PAD_Y,
+                      block_w - 5.0 - 22.0 - 16.0,
+                      max(block_h - 2 * CARD_PAD_Y, 0.0),
+                      sz=SIZES["body"], paras=bp)]
+    return out
+
+
+def _two_column_slots(bullets, pair):
+    """两栏：两张卡片，各带**圆形编号徽章**（参考稿第 1 页）。"""
+    left, right = _split_columns(bullets)
+    bl = [b if isinstance(b, str) else str(b.get("text", "")) for b in left]
+    br = [b if isinstance(b, str) else str(b.get("text", "")) for b in right]
+    card_w = (CONTENT_W - COL_GAP) / 2.0
+    inner_w = _card_inner_w(card_w, 2) - BADGE_D - 12.0
+    need = max(_paras_need(_card_pars(bl, SIZES["body"], COLORS["body"]),
+                            inner_w),
+               _paras_need(_card_pars(br, SIZES["body"], COLORS["body"]),
+                            inner_w))
+    card_h = max(max(CARD_MIN_H, BODY_H * 0.55),
+                 min(BODY_H, need + CARD_BAR_H + 2 * CARD_PAD_Y))
+    out = []
+    out.extend(_card_slots("ColLeft", CANVAS["margin"], CANVAS["body_top"],
+                            card_w, card_h, pair["accent"], pair["tint"],
+                            pair["deep"], 2, body_lines=bl, badge="01",
+                            bullet=True))
+    out.extend(_card_slots("ColRight", CANVAS["margin"] + card_w + COL_GAP,
+                            CANVAS["body_top"], card_w, card_h,
+                            pair["accent2"], pair["tint2"], pair["deep2"], 2,
+                            body_lines=br, badge="02", bullet=True))
+    return out
+
+
+def _table_slots(slide):
+    """表格版式：深蓝表头 + 斑马纹行 + 首列粗体。
+
+    🔴 行高是**固定值**（不是按内容自适应）——自适应就等于没有行高，
+       单元格里字装不下时会被悄悄缩掉，溢出判据也就失效了。
+    """
+    tb = slide.get("table") or {}
+    header = [str(h or "") for h in (tb.get("header") or [])]
+    rows = tb.get("rows") or []
+    ncols = len(header)
+    for r in rows:
+        ncols = max(ncols, len(r or []))
+    if ncols < 1:
+        return []
+    if ncols == 1:
+        ratios = [1.0]
+    elif ncols == 2:
+        ratios = [0.34, 0.66]
+    else:
+        ratios = [0.24] + [(0.76 / (ncols - 1))] * (ncols - 1)
+
+    xs = []
+    acc = CANVAS["margin"]
+    for r in ratios:
+        xs.append((acc, CONTENT_W * r))
+        acc += CONTENT_W * r
+
+    out = []
+    y = CANVAS["body_top"]
+    for i, htxt in enumerate(header):
+        cx, cw = xs[i]
+        color = COLORS["table_head"] if i == 0 else COLORS["table_head2"]
+        out.append(_free_slot("Head%d" % i, "rect", cx, y, cw, TABLE_HEAD_H,
+                              color=color))
+        out.append(_free_slot("HeadText%d" % i, "text", cx + 6.0, y + 6.0,
+                              cw - 12.0, TABLE_HEAD_H - 12.0, sz=SIZES["body"],
+                              bold=True, color="on_accent", align="ctr",
+                              paras=[{"text": htxt, "sz": SIZES["body"],
+                                      "bold": True, "color": "on_accent",
+                                      "align": "ctr", "bullet": False}]))
+    y += TABLE_HEAD_H
+    for r, row in enumerate(rows):
+        for i in range(ncols):
+            cx, cw = xs[i]
+            if i == 0:
+                fill = COLORS["paper"]
+                txt_color = COLORS["ink"]
+                bold = True
+            else:
+                fill = (COLORS["table_zebra"] if r % 2 == 0
+                        else COLORS["table_zebra_soft"])
+                txt_color = COLORS["body"]
+                bold = False
+            cell = ""
+            if i < len(row or []):
+                cell = str(row[i] or "")
+            out.append(_free_slot("Cell%d_%d" % (r, i), "rect", cx, y, cw,
+                                  TABLE_ROW_H, color=fill))
+            out.append(_free_slot("CellText%d_%d" % (r, i), "text",
+                                  cx + TABLE_CELL_PAD, y + TABLE_CELL_PAD,
+                                  cw - 2 * TABLE_CELL_PAD,
+                                  TABLE_ROW_H - 2 * TABLE_CELL_PAD,
+                                  sz=SIZES["body"], bold=bold, color=txt_color,
+                                  align="ctr",
+                                  paras=[{"text": cell, "sz": SIZES["body"],
+                                          "bold": bold, "color": txt_color,
+                                          "align": "ctr", "bullet": False}]))
+        y += TABLE_ROW_H
+    return out
+
+
+def _footer_slot(footer):
+    """页脚 = 标签串：粗体前缀 + 灰色正文（参考稿「准备清单：场地｜白板｜…」）。
+
+    🔴 拆点只取**第一个全角冒号**；没有就整条灰色。
+       拆出来的两段**一字不改**，只是粗细不同。
+    """
+    label, rest = split_label(footer)
+    if not rest:
+        runs = [{"text": str(footer), "bold": False, "color": COLORS["muted"]}]
+    else:
+        runs = [{"text": label + LABEL_SEP, "bold": True, "color": COLORS["ink"]},
+                {"text": rest, "bold": False, "color": COLORS["muted"]}]
+    g = dict(geom("footer", "Footer"))
+    g["kind"] = "text"
+    g["name"] = "Footer"
+    g["paras"] = [{"runs": runs, "sz": SIZES["footer"], "bullet": False,
+                   "align": "l"}]
+    return g
+
+
+def _badge_block_slots(group, slide):
+    """封面/分节页右上角的深色课时块（白字两行）。
+
+    🔴 只有 spec 明确给了 `badge_label` 才画 —— **不猜时长、不猜学时**。
+    """
+    label = slide.get("badge_label")
+    if not label:
+        return []
+    if isinstance(label, str):
+        label = [label]
+    lines = [str(x) for x in label if str(x).strip()]
+    if not lines:
+        return []
+    out = [_rect_slot(group, "Badge", color=COLORS["badge_block"])]
+    paras = []
+    for i, t in enumerate(lines):
+        paras.append({"text": t,
+                      "sz": SIZES["block"] if i == 0 else SIZES["block2"],
+                      "bold": i == 0, "color": "on_accent", "align": "l",
+                      "bullet": False, "spc_before": 0.0 if i == 0 else 2.0})
+    g = dict(geom(group, "BadgeText"))
+    g["kind"] = "text"
+    g["name"] = "BadgeText"
+    g["paras"] = paras
+    out.append(g)
+    return out
 
 
 def slots_for(slide):
@@ -438,27 +824,35 @@ def slots_for(slide):
     pair, _idx = accent_pair(slide)
 
     if layout == "title":
-        out.append(_rect_slot("title", "Panel", color=COLORS["card"]))
-        out.append(_rect_slot("title", "PanelBar", color=pair["accent"]))
         if title:
             out.append(_text_slot("title", "Title", title))
         if subtitle:
             out.append(_text_slot("title", "Subtitle", subtitle))
+        out.append(dict(geom("title", "Rule"), kind="rule", name="Rule",
+                        color=COLORS["rule_soft"]))
+        out.extend(_badge_block_slots("title", slide))
         out.append(_rect_slot("title", "AccentStrip", color=pair["accent"]))
     elif layout == "section":
-        out.append(_rect_slot("section", "Panel", color=COLORS["card"]))
-        out.append(_rect_slot("section", "PanelBar", color=pair["accent"]))
         if title:
             out.append(_text_slot("section", "Title", title))
         if subtitle:
             out.append(_text_slot("section", "Subtitle", subtitle))
+        out.append(dict(geom("section", "Rule"), kind="rule", name="Rule",
+                        color=pair["accent"]))
+        out.extend(_badge_block_slots("section", slide))
+        # 分节页也可以承载**模块卡**（议程页）：给了要点就排成卡片网格。
+        cards = cards_from_bullets(bullets)
+        if cards:
+            out.extend(_card_grid(cards, pair))
         out.append(_rect_slot("section", "AccentStrip", color=pair["accent"]))
     elif layout == "quote":
-        out.append(_rect_slot("quote", "Bar", color=pair["accent"]))
         if title:
-            out.append(_text_slot("quote", "Quote", title))
+            out.append(_text_slot("quote", "Title", title))
+        out.append(dict(geom("quote", "Rule"), kind="rule", name="Rule",
+                        color=pair["accent"]))
+        out.append(_rect_slot("quote", "Bar", color=pair["accent"]))
         if subtitle:
-            out.append(_text_slot("quote", "Attribution", subtitle))
+            out.append(_text_slot("quote", "Quote", subtitle))
     else:
         if title:
             out.append(_text_slot("content", "Title", title))
@@ -466,35 +860,10 @@ def slots_for(slide):
                 out.append(_text_slot("content", "Eyebrow", subtitle))
             out.append(dict(geom("content", "Rule"), kind="rule", name="Rule",
                             color=pair["accent"]))
-        if layout == "two-column":
-            left, right = _split_columns(bullets)
-            bl = _bullet_pars(left, SIZES["body"], SIZES["body_l2"],
-                              color=COLORS["body"], bullet_color=pair["accent"])
-            br = _bullet_pars(right, SIZES["body"], SIZES["body_l2"],
-                              color=COLORS["body"], bullet_color=pair["accent2"])
-            lg = geom("content", "BodyLeft")
-            rg = geom("content", "BodyRight")
-            need = max(_paras_need(bl, lg["w"]), _paras_need(br, rg["w"]))
-            card_h = max(96.0, min(need + 2 * CARD_PAD + BADGE_ZONE, BODY_H))
-            inner = max(card_h - 2 * CARD_PAD - BADGE_ZONE, 0.0)
-            out.append(_rect_slot("content", "ColLeft", color=COLORS["paper"],
-                                  h=card_h))
-            out.append(_rect_slot("content", "ColLeftBar", color=pair["accent"],
-                                  h=card_h))
-            out.append(_rect_slot("content", "ColRight", color=COLORS["paper"],
-                                  h=card_h))
-            out.append(_rect_slot("content", "ColRightBar", color=pair["accent2"],
-                                  h=card_h))
-            out.append(_rect_slot("content", "BadgeLeft", color=pair["accent"]))
-            out.append(_text_slot("content", "BadgeLeftText", "01"))
-            out.append(_rect_slot("content", "BadgeRight", color=pair["accent2"]))
-            out.append(_text_slot("content", "BadgeRightText", "02"))
-            gl = dict(lg)
-            gl.update({"kind": "text", "name": "BodyLeft", "h": inner, "paras": bl})
-            gr = dict(rg)
-            gr.update({"kind": "text", "name": "BodyRight", "h": inner, "paras": br})
-            out.append(gl)
-            out.append(gr)
+        if slide.get("table"):
+            out.extend(_table_slots(slide))
+        elif layout == "two-column":
+            out.extend(_two_column_slots(bullets, pair))
         elif layout == "image-focus":
             img_h = BODY_H - (CAPTION_BAND if caption else 0.0)
             if image:
@@ -503,10 +872,13 @@ def slots_for(slide):
                             "src": image})
                 out.append(pic)
             if bullets:
-                b = dict(geom("content", "Body"))
+                b = dict(geom("content", "Body") if "Body" in PROTOTYPES["content"]
+                         else {"x": 42.5, "y": CANVAS["body_top"], "w": CONTENT_W,
+                               "h": 30.0, "sz": SIZES["body"]})
                 b.update({"kind": "text", "name": "Body",
                           "y": CANVAS["body_top"] + img_h + 8.0, "h": 30.0,
-                          "paras": _bullet_pars(bullets, SIZES["body"], SIZES["body_l2"],
+                          "paras": _bullet_pars(bullets, SIZES["body"],
+                                                SIZES["body_l2"],
                                                 color=COLORS["body"],
                                                 bullet_color=pair["accent"])})
                 out.append(b)
@@ -519,27 +891,14 @@ def slots_for(slide):
                                      "align": "ctr", "bullet": False}]})
                 out.append(c)
         else:
-            # 正文卡：高度随内容自适应（但封顶在正文区高）
-            bp = _bullet_pars(bullets, SIZES["body"], SIZES["body_l2"],
-                              color=COLORS["body"], bullet_color=pair["accent"])
-            body_geom = geom("content", "Body")
-            card_h, inner_h = _fit_card(bp, body_geom["w"], BODY_H, CARD_PAD)
-            card = dict(geom("content", "Card"))
-            card.update({"kind": "rect", "name": "Card", "h": card_h,
-                         "color": COLORS["card"]})
-            out.append(card)
-            bar = dict(geom("content", "CardBar"))
-            bar.update({"kind": "rect", "name": "CardBar", "h": card_h,
-                        "color": pair["accent"]})
-            out.append(bar)
-            if bullets:
-                b = dict(body_geom)
-                b.update({"kind": "text", "name": "Body",
-                          "y": body_geom["y"], "h": inner_h, "paras": bp})
-                out.append(b)
+            cards = cards_from_bullets(bullets)
+            if cards:
+                out.extend(_card_grid(cards, pair))
+            elif bullets:
+                out.extend(_block_slots(bullets, pair))
 
     if footer:
-        out.append(_text_slot("footer", "Footer", footer))
+        out.append(_footer_slot(footer))
     return out
 
 
@@ -571,6 +930,9 @@ def overflow(slide):
                 if p.get("text"):
                     preview = str(p["text"])[:24]
                     break
+                if p.get("runs"):
+                    preview = "".join(str(r.get("text", "")) for r in p["runs"])[:24]
+                    break
             bad.append({"slot": slot.get("name", ""), "need": need, "have": have,
                         "over": need - have, "text": preview})
     return bad
@@ -585,11 +947,11 @@ def selftest():
     if overflow(ok):
         print("selftest: 良好样例被误报为溢出")
         return 2
-    # ② 装不下：超长封面标题（23pt，20 字 = 460pt < 633.6 ⇒ 一行 ⇒ 32pt < 96pt 装得下）
-    #    ⇒ 改用真正会溢出的：正文页 40 条要点
-    bad = {"layout": "bullets", "title": "标题",
-           "bullets": [{"text": "第 %d 条要点，占满一行宽度需要折行才能放进卡片里" % i,
-                        "level": 0} for i in range(12)]}
+    # ② 装不下：正文页超长标题（40 字 ⇒ 24pt 下折成 2 行 ⇒ 65pt > 标题框 34pt）
+    bad = {"layout": "bullets",
+           "title": "周期信号可以拆成若干正弦波的叠加而这已经接近单行容量上限了所以标题必须拆",
+           "bullets": [{"text": "要点一", "level": 0}],
+           "notes": "讲稿"}
     if not overflow(bad):
         print("selftest: 装不下的样例没有被报出来")
         return 2
@@ -609,6 +971,32 @@ def selftest():
     s2 = {"id": "P3", "title": "乙"}
     if accent_pair(s1)[0] != accent_pair(s2)[0]:
         print("selftest: 强调色选取依赖了标题文字（应当只依赖 id）")
+        return 2
+    # ⑤ 「标签：说明」拆分：只拆第一个全角冒号，且不丢字
+    t, d = split_label("小振动：位移远小于场区尺度")
+    if t != "小振动" or d != "位移远小于场区尺度":
+        print("selftest: 标签拆分不对：%r / %r" % (t, d))
+        return 2
+    if split_label("没有标签")[1]:
+        print("selftest: 没有标签的文本被凭空拆出了说明")
+        return 2
+    # ⑥ 卡片判定：一级要点 ⇒ 一张卡片；带「：」的拆成标题 + 正文
+    c = cards_from_bullets([{"text": "甲"}, {"text": "乙"}])
+    if c is None or c[0][0] != "甲" or c[0][1]:
+        print("selftest: 无标签的要点没有变成标题式卡片")
+        return 2
+    c = cards_from_bullets([{"text": "甲：说明"}, {"text": "乙：说明"}])
+    if c is None or c[0][0] != "甲" or c[0][1] != ["说明"]:
+        print("selftest: 带标签的要点没有拆成标题 + 正文")
+        return 2
+    # ⑦ 表格：行高固定 ⇒ 单元格里字太长会被溢出判据报出来
+    #    （半角字符按 0.5 em 算，160 个 x ≈ 80 em ⇒ 在 409pt 的单元格里要 3 行）
+    tb = {"layout": "bullets", "title": "表",
+          "table": {"header": ["维度", "内容"],
+                    "rows": [["甲", "x" * 160]]},
+          "notes": "讲稿"}
+    if not overflow(tb):
+        print("selftest: 表格单元格装不下却没有被报出来")
         return 2
     print("selftest: 全部通过")
     return 0

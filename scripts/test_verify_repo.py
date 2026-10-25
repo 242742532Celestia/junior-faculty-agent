@@ -720,6 +720,13 @@ def mutate_owner_set_but_placeholder_left(dst):
     🔴 这条针对的失败模式很阴：仓库已经配好 owner，看起来"发布就绪"，
        但 ISSUE 模板与 CHANGELOG 里的链接还指向 `OWNER/REPO` ——
        **没有任何既有检查会为此变红**，链接要等用户真去点才发现是死的。
+
+    🔴 **变异必须自己把失败模式造出来**（2026-10-25 修）：
+       仓库里的占位符早已被清干净（清干净本身是对的），所以这条变异
+       不能再靠"改动现状"生效 —— 那样它测的是"占位还在不在"，
+       而不是"守卫抓不抓得住占位没清"，于是占位一清它就变成**空变异**
+       （exit=0，判据报"漏检"）。正确做法：把占位符**放回去**，
+       再把 owner 填上 —— 这才是那个失败模式的完整状态。
     """
     rel = os.path.join("references", "github-release.json")
     t = _rd(dst, rel)
@@ -729,7 +736,15 @@ def mutate_owner_set_but_placeholder_left(dst):
         raise RuntimeError("变异无效：github-release.json 解析不了：%s" % e)
     cfg["owner"] = "someone"
     _wr(dst, rel, json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
-    # 占位符保持原样（这正是要被抓的失败模式）
+
+    # 把占位符放回 ISSUE 模板（"owner 填了却没清占位"就是这个状态）
+    rel2 = os.path.join(".github", "ISSUE_TEMPLATE", "config.yml")
+    t2 = _rd(dst, rel2)
+    t2b = re.sub(r"https://github\.com/[^/\s]+/[^/\s]+",
+                  "https://github.com/OWNER/REPO", t2, count=1)
+    if t2b == t2:
+        raise RuntimeError("变异无效：ISSUE 模板里找不到 owner/repo 链接")
+    _wr(dst, rel2, t2b)
 
 
 MUTATIONS = [

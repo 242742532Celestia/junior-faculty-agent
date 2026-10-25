@@ -236,9 +236,9 @@ def run_props(sz, bold=False, color=C_INK):
             % (int(round(sz * 100)), 1 if bold else 0, color))
 
 
-def paragraph(text, sz=SZ_BODY, bold=False, color=C_INK, algn="l",
-              level=0, bullet=True, spc_before=0, indent=0, bullet_color=None):
-    """构造一个 <a:p>。level > 0 时用缩进+短横线项目符号。
+def _ppr(algn="l", level=0, bullet=True, spc_before=0, bullet_color=None,
+         color=C_INK):
+    """构造 `<a:pPr>`。
 
     `spc_before` 的单位是**百分之一磅**（OOXML `a:spcPts` 的单位）。
     🔴 它是 `<a:pPr>` 的**子元素**，且按 schema 顺序必须排在
@@ -262,6 +262,13 @@ def paragraph(text, sz=SZ_BODY, bold=False, color=C_INK, algn="l",
     else:
         ppr += "<a:buNone/>"
     ppr += "</a:pPr>"
+    return ppr
+
+
+def paragraph(text, sz=SZ_BODY, bold=False, color=C_INK, algn="l",
+              level=0, bullet=True, spc_before=0, indent=0, bullet_color=None):
+    """构造一个 <a:p>。level > 0 时用缩进+短横线项目符号。"""
+    ppr = _ppr(algn, level, bullet, spc_before, bullet_color, color)
 
     # 支持行内换行：文本里的 \n 拆成多个 <a:br/>
     chunks = str(text).split("\n")
@@ -271,6 +278,28 @@ def paragraph(text, sz=SZ_BODY, bold=False, color=C_INK, algn="l",
             runs.append("<a:br>%s</a:br>" % run_props(sz, bold, color))
         runs.append("<a:r>%s<a:t>%s</a:t></a:r>" % (run_props(sz, bold, color), esc(c)))
     return "<a:p>%s%s</a:p>" % (ppr, "".join(runs))
+
+
+def paragraph_runs(runs, sz=SZ_BODY, algn="l", level=0, bullet=False,
+                   spc_before=0):
+    """构造一个**一段内混排粗细/颜色**的 <a:p>。
+
+    用在哪：页脚是「**依据**：《…》「…」」这种**标签串** ——
+    粗体前缀 + 灰色正文必须**在同一行**里，靠两个文本框排不出来。
+    """
+    ppr = _ppr(algn, level, bullet, spc_before, None, C_INK)
+    body = []
+    for r in runs or []:
+        t = str(r.get("text", ""))
+        if not t:
+            continue
+        body.append("<a:r>%s<a:t>%s</a:t></a:r>"
+                    % (run_props(int(r.get("sz") or sz), bool(r.get("bold")),
+                                 resolve_color(r.get("color"), C_INK)),
+                       esc(t)))
+    if not body:
+        body.append('<a:endParaRPr lang="zh-CN"/>')
+    return "<a:p>%s%s</a:p>" % (ppr, "".join(body))
 
 
 def textbox(shape_id, name, x, y, cx, cy, paras, anchor="t", wrap=True):
@@ -325,6 +354,21 @@ def rect(shape_id, name, x, y, cx, cy, color):
             % (shape_id, esc(name), x, y, cx, cy, resolve_color(color)))
 
 
+def ellipse(shape_id, name, x, y, cx, cy, color):
+    """一个实心椭圆（圆形编号徽章）。
+
+    🔴 用 `prst="ellipse"` 而不是圆角矩形 —— 参考课件的编号徽章是**正圆**，
+       方角徽章一眼就能看出不是同一套视觉语言。
+    """
+    return ('<p:sp><p:nvSpPr><p:cNvPr id="%d" name="%s"/>'
+            '<p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+            '<p:spPr><a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm>'
+            '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>'
+            '<a:solidFill><a:srgbClr val="%s"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr>'
+            '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="zh-CN"/></a:p></p:txBody></p:sp>'
+            % (shape_id, esc(name), x, y, cx, cy, resolve_color(color)))
+
+
 # ---------------------------------------------------------------- 幻灯片排版
 
 def _para(p):
@@ -333,6 +377,13 @@ def _para(p):
     `spc_before` 在版式表里是**磅**（度量用），这里换算成 OOXML 用的
     百分之一磅（`spcPts`）。
     """
+    if p.get("runs"):
+        # 一段内混排粗细/颜色（页脚标签串）
+        return paragraph_runs(p["runs"], sz=p.get("sz", SZ_BODY),
+                              algn=p.get("align", "l"),
+                              level=int(p.get("level", 0)),
+                              bullet=p.get("bullet", False),
+                              spc_before=int(round(float(p.get("spc_before") or 0) * 100)))
     return paragraph(p.get("text", ""), sz=p.get("sz", SZ_BODY),
                      bold=p.get("bold", False),
                      color=resolve_color(p.get("color"), C_INK),
@@ -373,6 +424,11 @@ def render_slide(sld, idx, media, image_rels, base_dir):
             shapes.append(rect(sid, slot["name"], pt(slot["x"]), pt(slot["y"]),
                                pt(slot["w"]), pt(slot["h"]),
                                slot.get("color", C_PAPER)))
+            sid += 1
+        elif kind == "ellipse":
+            shapes.append(ellipse(sid, slot["name"], pt(slot["x"]), pt(slot["y"]),
+                                  pt(slot["w"]), pt(slot["h"]),
+                                  slot.get("color", C_ACCENT)))
             sid += 1
         elif kind == "picture":
             rid = _register_image(image_rels, slot.get("src", ""), media, base_dir)

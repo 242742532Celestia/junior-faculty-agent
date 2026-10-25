@@ -61,7 +61,7 @@ THRESHOLDS = {
     "max_bullet_chars": 30,    # 单条要点最多几个字符
     "max_title_chars": 20,     # 页面标题最多几个字符
     "max_body_chars": 120,     # 一页正文最多几个字符
-    "max_image_bullets": 4,    # 图 + 要点时，���点最多几条
+    "max_image_bullets": 4,    # 图 + 要点时，要点最多几条
     "min_notes_chars": 10,     # 讲稿最少几个字符
     "max_notes_chars": 800,    # 讲稿最多几个字符
 }
@@ -113,6 +113,38 @@ def _bullets_of(sld):
     return out
 
 
+def _table_of(sld):
+    """一页的表格规格（没有表格返回 None）。
+
+    🔴 表格页的正文在 `table.rows` 里，不在 `bullets` 里。
+       判据若只看 bullets，表格页就会**整页免检** ——
+       一张塞满字的表照样能通过全部检查。
+    """
+    tb = sld.get("table")
+    if not isinstance(tb, dict):
+        return None
+    header = [str(h or "") for h in (tb.get("header") or [])]
+    rows = []
+    for r in (tb.get("rows") or []):
+        rows.append([str(c or "") for c in (r or [])])
+    return {"header": header, "rows": rows}
+
+
+def _body_units(sld):
+    """一页正文里的所有文本单元 [(文本, 层级)]。
+
+    要点与表格单元**都算正文** —— 判据不区分"用列表写"还是"用表格写"，
+    只看观众要读的字有多少。
+    """
+    out = list(_bullets_of(sld))
+    tb = _table_of(sld)
+    if tb:
+        for r in tb["rows"]:
+            for c in r:
+                out.append((c, 0))
+    return out
+
+
 def _chars(s):
     """字符数：中文按 1 个字算，忽略空白。"""
     return len(re.sub(r"\s", "", s or ""))
@@ -161,7 +193,9 @@ def lint(spec, th=None):
         notes = str(sld.get("notes", "") or "")
         footer = str(sld.get("footer", "") or "")
         bullets = _bullets_of(sld)
-        body_chars = sum(_chars(t_) for t_, _lv in bullets)
+        units = _body_units(sld)
+        table = _table_of(sld)
+        body_chars = sum(_chars(t_) for t_, _lv in units)
 
         # L05 正文页必须有标题
         if layout in TEXT_LAYOUTS and not title.strip():
@@ -174,14 +208,17 @@ def lint(spec, th=None):
         if title and VAGUE_TITLE.match(title.strip()):
             add("L11", INFO, i, "标题「%s」是分类词不是断言；"
                 "改成「这一页要让学生知道什么」更好" % title.strip())
-        # L01 要点数
-        if len(bullets) > t["max_bullets"]:
+        # L01 要点数（表格页按行数算）
+        n_items = len(bullets)
+        if not n_items and table:
+            n_items = len(table["rows"])
+        if n_items > t["max_bullets"]:
             add("L01", ERROR, i, "有 %d 条要点，超过 %d 条上限；"
-                "请拆页或转成讲稿" % (len(bullets), t["max_bullets"]))
-        # L02 单条长度
-        for j, (text, _lv) in enumerate(bullets):
+                "请拆页或转成讲稿" % (n_items, t["max_bullets"]))
+        # L02 单条长度（表格单元同样受管）
+        for j, (text, _lv) in enumerate(units):
             if _chars(text) > t["max_bullet_chars"]:
-                add("L02", WARN, i, "第 %d 条要点 %d 字，超过 %d 字；"
+                add("L02", WARN, i, "第 %d 项正文 %d 字，超过 %d 字；"
                     "长句应进讲稿" % (j + 1, _chars(text), t["max_bullet_chars"]))
         # L04 讲稿
         if layout in ("bullets", "two-column", "image-focus"):
@@ -192,7 +229,7 @@ def lint(spec, th=None):
                 nc = _chars(notes)
                 if nc < t["min_notes_chars"]:
                     add("L12", WARN, i, "讲稿仅 %d 字，可能不足以支撑 %d 条要点的口述"
-                        % (nc, len(bullets)))
+                        % (nc, n_items))
                 elif nc > t["max_notes_chars"]:
                     add("L12", INFO, i, "讲稿 %d 字，建议拆成多页" % nc)
         # L04 正文总字数
@@ -200,7 +237,7 @@ def lint(spec, th=None):
             add("L04", WARN, i, "正文合计 %d 字，超过 %d 字上限"
                 % (body_chars, t["max_body_chars"]))
         # L06 线性指代
-        blob = title + " " + " ".join(t_ for t_, _ in bullets)
+        blob = title + " " + " ".join(t_ for t_, _ in units)
         m = LINEAR_REF.search(blob)
         if m:
             add("L06", WARN, i, "出现「%s」；幻灯片是并置版面，"
@@ -210,7 +247,7 @@ def lint(spec, th=None):
             add("L08", WARN, i, "本页出现事实/数据类表述但没有来源标注（footer）")
         # L09 空白页
         if layout in ("bullets", "two-column", "image-focus") \
-                and not bullets and not sld.get("image"):
+                and not units and not sld.get("image"):
             add("L09", WARN, i, "既没有要点也没有图片，等于空白页")
         # L10 图 + 要点
         if sld.get("image") and len(bullets) > t["max_image_bullets"]:
@@ -251,9 +288,9 @@ def selftest():
             {"layout": "title", "title": "封面"},
             {"layout": "title", "title": "又一个封面"},
             # 40 字正文页标题：字数远超 L03 的 20 字上限，但 **L03 只是 WARN**；
-            # 这里要触发的是 **L15 几何溢出** —— 新画布（633.6pt / 23pt）一行
-            # 只放得下 27 个字，40 字必然折成 2 行，而正文页标题框只有 43.2pt
-            # （1 行 32pt），2 行 64pt 装不下 ⇒ PowerPoint 会悄悄缩小字号。
+            # 这里要触发的是 **L15 几何溢出** —— 正文页标题框宽 600pt、字号 24pt，
+            # 一行只放得下 25 个字，40 字必然折成 2 行，而标题框只有 34pt
+            # （1 行 33pt），2 行 65pt 装不下 ⇒ PowerPoint 会悄悄缩小字号。
             {"layout": "bullets",
              "title": "周期信号可以拆成若干正弦波的叠加而这已经接近单行容量上限了所以标题必须拆",
              "bullets": [{"text": "要点一", "level": 0}],
