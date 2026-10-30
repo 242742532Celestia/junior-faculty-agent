@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>junior-faculty-agent — Deliverables with machine-checkable acceptance criteria</title>
+<meta name="description" content="An open-source local agent for university teachers and researchers: lesson plans, exam papers, grant applications, journal submissions — every deliverable has machine-checkable acceptance criteria.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="junior-faculty-agent">
+<meta property="og:description" content="An open-source local agent for university teachers and researchers: lesson plans, exam papers, grant applications, journal submissions — every deliverable has machine-checkable acceptance criteria.">
+<meta property="og:image" content="https://242742532celestia.github.io/junior-faculty-agent/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://242742532celestia.github.io/junior-faculty-agent/social-preview.png">
+<style>
+  :root{--bg:#0a0f1a;--bg2:#151d2d;--grid:#1e283a;--border:#263248;--txt:#e6edf3;--muted:#93a1b5;--accent:(244, 162, 97)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 "Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+    background-image:linear-gradient(to bottom,rgba(21,29,45,.9),rgba(10,15,26,.95)),
+      repeating-linear-gradient(to right,var(--grid) 0 1px,transparent 1px 40px),
+      repeating-linear-gradient(to bottom,var(--grid) 0 1px,transparent 1px 40px)}
+  .wrap{max-width:960px;margin:0 auto;padding:64px 24px 72px}
+  .eyebrow{font:600 13px/1 "Cascadia Mono",Consolas,monospace;letter-spacing:.22em;color:var(--accent);text-transform:uppercase}
+  h1{font-size:clamp(38px,7vw,58px);line-height:1.08;margin:.28em 0 .1em;font-weight:700;letter-spacing:-.02em}
+  .rule{width:116px;height:4px;background:var(--accent);margin:18px 0 26px;border-radius:2px}
+  .lede{font-size:20px;color:var(--muted);max-width:780px;margin:0 0 8px}
+  .lede strong{color:var(--txt);font-weight:600}
+  .lede code{font:16px/1.5 "Cascadia Mono",Consolas,monospace;color:var(--accent)}
+  pre{background:#0d1420;border:1px solid var(--border);border-radius:12px;padding:18px 20px;overflow:auto;
+      font:14px/1.6 "Cascadia Mono",Consolas,monospace;color:var(--txt)}
+  pre .c{color:#6b7a90} pre .p{color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 0;padding:0;list-style:none}
+  .chips li{font:600 13px/1 "Cascadia Mono",Consolas,monospace;padding:9px 14px;border-radius:9px;border:1px solid;white-space:nowrap}
+  .c1{color:var(--accent);border-color:var(--accent)} .c2{color:#7be495;border-color:#7be495}
+  .c3{color:#f4a261;border-color:#f4a261} .c4{color:var(--muted);border-color:var(--muted)}
+  figure{margin:44px 0 0;background:#0d1420;border:1px solid var(--border);border-radius:14px;padding:18px}
+  figure img{width:100%;border-radius:8px;display:block}
+  figcaption{font-size:14px;color:var(--muted);margin-top:14px}
+  h2{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:52px 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+  .card{background:#0d1420;border:1px solid var(--border);border-radius:12px;padding:18px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:0;color:var(--muted);font-size:14.5px}
+  .card code{font:13px/1.5 "Cascadia Mono",Consolas,monospace;color:var(--accent)}
+  .links{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+  .links a{display:inline-block;border:1px solid var(--border);border-radius:10px;padding:11px 16px;color:var(--txt);text-decoration:none;font-size:15px;background:#0d1420}
+  .links a:hover{border-color:var(--accent);color:var(--accent)}
+  .links a.primary{border-color:var(--accent);color:var(--accent)}
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+  footer a{color:var(--accent)}
+  .note{color:var(--muted);font-size:15px;margin-top:10px}
+  .note strong{color:var(--txt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OPEN-SOURCE AGENT · UNIVERSITY TEACHING & RESEARCH</div>
+  <h1>junior-faculty-agent</h1>
+  <div class="rule"></div>
+  <p class="lede">An open-source local agent for university teachers and researchers. It writes lesson plans, exam papers, grant applications and journal submissions — and for every one of them it states the <strong>acceptance criteria as machine-checkable checks</strong>, so “done” is a verdict, not an opinion.</p>
+<pre><code>git clone https://github.com/242742532Celestia/junior-faculty-agent.git
+cd junior-faculty-agent
+
+# self-check before you trust it with your own material
+python scripts/selftest.py
+python scripts/verify_repo.py
+</code></pre>
+  <ul class="chips">    <li class='c1'>86 skills</li>
+    <li class='c2'>6 domains / 41 capabilities</li>
+    <li class='c3'>machine-checkable criteria</li>
+    <li class='c4'>tiered packages</li>
+    <li class='c1'>MIT</li></ul>
+  <figure>
+    <img src="social-preview.png" alt="junior-faculty-agent">
+    <figcaption>34 of 41 capabilities are fully covered, 4 are partial, 3 are documented gaps. The matrix is the contract: a cell is only filled when a skill actually stands behind it.</figcaption>
+  </figure>
+  <h2>What is in the box</h2>
+  <div class="grid">
+<div class='card'><h3>Outline first</h3><p>The agent starts from an outline that is the single source of truth. Every downstream artefact is checked against it, so the handout cannot drift away from the lesson plan.</p></div>
+<div class='card'><h3>Four deliverable types</h3><p>Lesson plan, exam paper, slide deck, handout — plus a self-check report that states which criteria passed and which need a human.</p></div>
+<div class='card'><h3>Guards that actually fire</h3><p>56 mutations are seeded into the checks; each one must be caught by the check it belongs to. A guard that cannot fail is not a guard.</p></div>
+<div class='card'><h3>Tiered distributable packages</h3><p><code>teaching</code>, <code>research</code> and <code>full</code> builds, each with a MANIFEST and checksums, so you can audit the archive before you unpack it.</p></div>
+  </div>
+  <h2>Where to go next</h2>
+  <div class="links">
+<a class='primary' href='https://github.com/242742532Celestia/junior-faculty-agent'>Repository</a>
+<a href='https://github.com/242742532Celestia/junior-faculty-agent/releases'>Releases</a>
+<a href='https://github.com/242742532Celestia/junior-faculty-agent/blob/main/CONTRIBUTING.md'>Contributing</a>
+<a href='https://github.com/242742532Celestia/junior-faculty-agent/issues'>Issues</a>
+  </div>
+  <p class="note">Gaps are documented rather than hidden: the capability matrix marks 4 partial and 3 missing cells, and the README says which ones. No commercial-only skill is included in the open-source distribution.</p>
+  <footer>
+MIT licensed. Clone it, run <code>selftest</code>, and read the capability matrix before you rely on it.
+    <br>Source: <a href="https://github.com/242742532Celestia/junior-faculty-agent">github.com/242742532Celestia/junior-faculty-agent</a>
+  </footer>
+</div>
+</body>
+</html>
