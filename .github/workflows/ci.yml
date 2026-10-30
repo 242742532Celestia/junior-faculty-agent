@@ -32,6 +32,16 @@ jobs:
         # 3.9 是本项目的**兼容下限**（纯标准库、Python 3.9 兼容写法）；
         # 3.13 是当代版本。两者都跑，才谈得上「兼容」。
         python: ["3.9", "3.13"]
+        # 🔴 ubuntu-latest 已切到 Ubuntu 26.04, 而 actions/python-versions
+        #    没有 Python 3.9 的 26.04 构建 (实测 3.9.13 只有 20.04/22.04/24.04)
+        #    ⇒ Linux 上的 3.9 这一腿单独钉到 ubuntu-24.04;
+        #    其余组合继续跟 ubuntu-latest 走, 保持对新镜像的覆盖。
+        exclude:
+          - os: ubuntu-latest
+            python: "3.9"
+        include:
+          - os: ubuntu-24.04
+            python: "3.9"
 
     steps:
       - uses: actions/checkout@v4
