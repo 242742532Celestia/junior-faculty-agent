@@ -2,7 +2,7 @@
 
 > 这是**巡检基线**。每季度巡检后更新。
 > 「覆盖状态」记录某能力格是否已有技能接住；`—` 表示缺口，是巡检时优先补的候选。
-> 维护人：junior-faculty-agent ｜ 最近更新：2026-10-26（第 8 版：**公式校正线回仓** —— 新增原创技能 `formula-typesetting`（伪公式检测 / LaTeX 规范化 / OMML 注入 / 验收闸），同挂 B7（教学侧：课件、讲义、教案的公式）与 E4（科研侧：论文公式）。它不是"再加一个能力"，而是**给所有生成物接上一道必经工序**：课件 / 讲义 / 教案 / 试卷 / 论文的公式统一在**源层**规范化一次，各载体只负责渲染自己那一份（Markdown 走 typst、PPTX 注入 OMML）。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 7 版：**课件线拆分** —— `teaching-slide-designer` 拆成**设计**（写什么：认知任务 / 断言式标题 / 讲稿分离 / 阈值）与**生成**（怎么生成：PPTX 生成器 / 版式几何 / 溢出判据 / 实开验收）两个技能，后者名为 `teaching-slide-builder`，三支脚本随之迁入其 `scripts/`；两技能同挂 B7 与 E7。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
+> 维护人：junior-faculty-agent ｜ 最近更新：2026-11-06（第 9 版：**人设合同独立成技能** —— 新增仓库机制类技能 `junior-faculty-persona`（人设 + 五条硬纪律 + 三道流程纪律的载体），归入 `profiles.json` 的 `full_only_skills`，与 `skill-scan` 同列；恒等式改为 `full − {skill-scan, junior-faculty-persona}`。它不是「再加一项能力」，而是把**「被加载者是谁」这件事**从 `agent.md` 里抽成可独立分发的载体 —— 以便以「被安装这个仓库/插件」的方式分发时，对方拿到的仍是同一个青年教师。**覆盖计数不变（34/41）**。第 8 版：**公式校正线回仓** —— 新增原创技能 `formula-typesetting`（伪公式检测 / LaTeX 规范化 / OMML 注入 / 验收闸），同挂 B7（教学侧：课件、讲义、教案的公式）与 E4（科研侧：论文公式）。它不是"再加一个能力"，而是**给所有生成物接上一道必经工序**：课件 / 讲义 / 教案 / 试卷 / 论文的公式统一在**源层**规范化一次，各载体只负责渲染自己那一份（Markdown 走 typst、PPTX 注入 OMML）。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 7 版：**课件线拆分** —— `teaching-slide-designer` 拆成**设计**（写什么：认知任务 / 断言式标题 / 讲稿分离 / 阈值）与**生成**（怎么生成：PPTX 生成器 / 版式几何 / 溢出判据 / 实开验收）两个技能，后者名为 `teaching-slide-builder`，三支脚本随之迁入其 `scripts/`；两技能同挂 B7 与 E7。**覆盖计数不变（34/41）**，B7 仍为「部分覆盖」。第 6 版：**分档出包** —— 本矩阵同时成为「分档出包」的推导源：6 个此前未入任何格的新技能补进 A1/A2/B7/D5/F2，`teaching-slide-designer` 另挂 B7（教学侧，它本来就挂在 E7）；档位数据 `references/profiles.json`，推导器 `scripts/profile_map.py`，恒等式 `teaching ∪ research = full − {skill-scan}` 由守卫机械校验。**覆盖计数不变（34/41）。** 第 5 版：幻灯片线自研回仓 —— 新增 `teaching-slide-designer` / `paper-to-talk-designer` / `openmaic-courseware` / `teacher-style-profile` / `personal-course-pattern-builder` 共 5 个技能；E7 去掉 `◐nature-paper2ppt`；外部技能表移除 `pptx` 与 `nature-paper2ppt`）
 
 ## 一、能力格清单
 
@@ -48,12 +48,12 @@
 >
 > | 档位 | 能力域 | 技能数 |
 > |---|---|---|
-> | `teaching` | A 教学准备 / B 教学实施 / C 考核评价 / D 学生支持 / F 教研发展 | 63 |
-> | `research` | E 科研全流程 | 25 |
-> | `full` | 全部 + 仓库机制类 | 88 |
+> | `teaching` | A 教学准备 / B 教学实施 / C 考核评价 / D 学生支持 / F 教研发展 | 64 |
+> | `research` | E 科研全流程 | 26 |
+> | `full` | 全部 + 仓库机制类 | 89 |
 >
-> 恒等式：`teaching ∪ research == full − {skill-scan}`
-> （`skill-scan` 是**仓库自身的季度巡检机制**，不是师生素能力，因此只在完整包里）。
+> 恒等式：`teaching ∪ research == full − {skill-scan, junior-faculty-persona}`
+> （`skill-scan` 是**仓库自身的季度巡检机制**，`junior-faculty-persona` 是**运行合同本身**，两者都不是师生素能力，因此只在完整包里）。
 >
 > 🔴 **每个已装技能都必须在本表某一格里有归属** —— 没归属的技能会在两个分档里
 > **双双消失**，而 `full` 档里还在。守卫 `scripts/verify_repo.py` 会红，

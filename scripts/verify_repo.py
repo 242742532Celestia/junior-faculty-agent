@@ -180,7 +180,7 @@ SAME_SURNAME_MULTI_AUTHOR = {
 def check_skill_counts():
     skills = installed_skills()
     total = len(skills)
-    check("技能总数 = 88", total == 88, "实际 %d" % total)
+    check("技能总数 = 89", total == 89, "实际 %d" % total)
 
     buckets = {"edu": [], "kdense": [], "nc": [], "own": []}
     for s in sorted(skills):

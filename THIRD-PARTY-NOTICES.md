@@ -313,6 +313,7 @@ skills/paper-to-talk-designer/
 skills/teaching-slide-builder/
 skills/teaching-slide-designer/
 skills/formula-typesetting/
+skills/junior-faculty-persona/
 reports/（巡检报告与验证产出）
 ```
 

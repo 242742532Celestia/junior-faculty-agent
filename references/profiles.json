@@ -22,5 +22,5 @@
       "description": "科研全流程一个域（选题→实验→写作→投稿→评议→图表→汇报→申报→教学研究论文）。"
     }
   },
-  "full_only_skills": ["skill-scan"]
+  "full_only_skills": ["skill-scan", "junior-faculty-persona"]
 }

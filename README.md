@@ -217,7 +217,7 @@ junior-faculty-agent/
 │   ├── MIT-K-Dense.txt                            # 19 个 K-Dense MIT 技能
 │   ├── Apache-2.0-markdown-mermaid-writing.txt   # Apache §4(a)：须随包提供副本
 │   └── OpenMAIC-MIT.txt                           # MIT (c) 2026 THU-MAIC：3 个衍生技能的署名依据
-├── skills/                               # 88 个技能（68 原创 + 20 GitHub）
+├── skills/                               # 89 个技能（69 原创 + 20 GitHub）
 │   ├── grant-proposal-writer/            # 私有：项目申报书
 │   ├── exam-question-bank/               # 私有：命题与题库
 │   ├── teaching-file-builder/            # 私有：教学文件产出规范
@@ -337,9 +337,9 @@ python scripts\verify_repo.py
 # verify_repo: 122/122 checks passed
 
 python scripts\verify_rewrite.py
-# verify_rewrite: 688/688 checks passed
+# verify_rewrite: 689/689 checks passed
 #   （这是**无上游原文**时的口径，也是克隆方默认会看到的数；
-#     带上游原文（--upstream / JFA_UPSTREAM）会多跑 50 项 clean-room 相似度核对 ⇒ 738）
+#     带上游原文（--upstream / JFA_UPSTREAM）会多跑 50 项 clean-room 相似度核对 ⇒ 739）
 
 python scripts\test_verify_repo.py
 # 56/56 项变异均被守卫在预期检查项上抓到
@@ -347,12 +347,12 @@ python scripts\test_verify_repo.py
 # （另有 3 项出包器变异：矩阵归属漂移 / 档位能力域被删 / 包内缺许可副本 → 必须中止出包）
 
 python scripts\package_release.py --build
-# → dist/junior-faculty-agent-1.0.0.zip（523 个文件 + MANIFEST.json）
+# → dist/junior-faculty-agent-1.0.0.zip（524 个文件 + MANIFEST.json）
 # PASS  分发包校验通过 / 商业可用 True（不含 NonCommercial）
 #   克隆即用  : 已通过（包内 demo 自检 + 大纲唯一事实源 + 端到端）
 
 python scripts\github_release.py --build
-# → dist/junior-faculty-agent-1.0.0-source.zip（523 个文件 + MANIFEST.json）
+# → dist/junior-faculty-agent-1.0.0-source.zip（527 个文件 + MANIFEST.json）
 # → dist/RELEASE_NOTES.md
 # PASS  GitHub 源码包校验通过 / 克隆即用 已通过
 
@@ -506,7 +506,7 @@ Linux + Windows × Python 3.9 / 3.13，各跑一遍 `verify_repo` / `verify_rewr
 
 - ✅ **本仓库不含任何 NonCommercial（NC）内容，也没有 ShareAlike（SA）改编内容**
   —— 可以开源，也可以商用。
-- ⚠️ **不是"全仓 MIT"**：68 个本项目原创部分为 MIT；20 个 GitHub 技能中
+- ⚠️ **不是"全仓 MIT"**：69 个本项目原创部分为 MIT；20 个 GitHub 技能中
   **19 个 MIT + 1 个 Apache-2.0**（`markdown-mermaid-writing`，
   署名 Clayton Young / Superior Byte Works, LLC）。
   Apache-2.0 同样允许商用，义务不同：必须向接收方提供许可副本（已在
@@ -612,7 +612,7 @@ teaching ∪ research == full − {skill-scan}
      **回装本仓库**（论文线随包分发）。命中时直接用即可。
    为保持上游内容原样（见 `NOTICE.md`），本仓库**未修改**这些文件正文，
    改为在本项目自己的文档里改用真实存在的技能。
-   （本项目自己编写的 88 个技能**不含**悬空引用 ——
+   （本项目自己编写的 89 个技能**不含**悬空引用 ——
    `scripts/verify_rewrite.py` 的**全仓交叉引用校验**对 `skills/` 下每一个技能
    逐条机械校验，外部技能须登记在 `references/external-skills.json`。）
 7. **`skills-archive/` 是本机自用副本，不随分发**：里面是 3 个 CC BY-NC 4.0
